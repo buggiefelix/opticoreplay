@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallet | Opticore Play</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="script.js" defer></script>
+</head>
+<body data-page="wallet" data-protected="true" data-nav="wallet">
+  <div class="page-shell">
+    <header class="app-topbar">
+      <a class="brand-lockup" href="dashboard.html">
+        <img class="brand-logo" src="a_professional_logo_design_for_opticore_play_is.png" alt="Opticore Play logo">
+        <div class="brand-copy">
+          <strong>Opticore Play</strong>
+          <span>Wallet center</span>
+        </div>
+      </a>
+      <div class="topbar-actions">
+        <span class="info-pill">Balance <strong data-balance>N0</strong></span>
+      </div>
+    </header>
+
+    <section class="wallet-grid" style="margin-top: 22px;">
+      <section class="panel ring-card">
+        <span class="eyebrow">Available balance</span>
+        <div class="balance-ring">
+          <div class="balance-ring-inner">
+            <small>Wallet</small>
+            <strong id="walletBalance">N0</strong>
+            <span class="muted-text">Ready for deposits, entries, and withdrawals.</span>
+          </div>
+        </div>
+        <div id="walletHighlights" class="wallet-highlights"></div>
+      </section>
+
+      <section class="section-stack">
+        <div class="panel">
+          <span class="eyebrow">Deposit</span>
+          <h2 class="panel-title">Fund your wallet</h2>
+          <form id="depositForm" class="field-grid" style="margin-top: 18px;">
+            <div class="field">
+              <label for="depositAmount">Amount</label>
+              <input id="depositAmount" name="amount" type="number" min="100" step="100" placeholder="500">
+            </div>
+            <button class="btn btn-primary" type="submit">Add Funds</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <span class="eyebrow">Withdraw</span>
+          <h2 class="panel-title">Send a withdrawal request</h2>
+          <form id="withdrawForm" class="field-grid" style="margin-top: 18px;">
+            <div class="field-grid two">
+              <div class="field">
+                <label for="withdrawAmount">Amount</label>
+                <input id="withdrawAmount" name="amount" type="number" min="100" step="100" placeholder="500">
+              </div>
+              <div class="field">
+                <label for="withdrawBank">Bank Name</label>
+                <input id="withdrawBank" name="bankName" placeholder="Example Bank">
+              </div>
+            </div>
+            <div class="field-grid two">
+              <div class="field">
+                <label for="withdrawAccountNumber">Account Number</label>
+                <input id="withdrawAccountNumber" name="accountNumber" placeholder="0123456789">
+              </div>
+              <div class="field">
+                <label for="withdrawAccountName">Account Name</label>
+                <input id="withdrawAccountName" name="accountName" placeholder="Player Name">
+              </div>
+            </div>
+            <button class="btn btn-secondary" type="submit">Request Withdrawal</button>
+          </form>
+        </div>
+      </section>
+    </section>
+
+    <section class="content-grid" style="margin-top: 22px;">
+      <section class="panel">
+        <span class="eyebrow">Transactions</span>
+        <h2 class="panel-title">Wallet activity</h2>
+        <div id="walletTransactions" class="transaction-list" style="margin-top: 18px;"></div>
+      </section>
+
+      <section class="panel">
+        <span class="eyebrow">Withdrawals</span>
+        <h2 class="panel-title">Request history</h2>
+        <div id="withdrawHistory" class="history-list" style="margin-top: 18px;"></div>
+      </section>
+    </section>
+  </div>
+
+  <nav class="nav-bar">
+    <a class="nav-link" data-nav-link="home" href="dashboard.html"><span class="nav-dot"></span><span>Home</span></a>
+    <a class="nav-link" data-nav-link="wallet" href="wallet.html"><span class="nav-dot"></span><span>Wallet</span></a>
+    <a class="nav-link" data-nav-link="friends" href="friends.html"><span class="nav-dot"></span><span>Friends</span></a>
+    <a class="nav-link" data-nav-link="tournaments" href="tournaments.html"><span class="nav-dot"></span><span>Tourneys</span></a>
+    <a class="nav-link" data-nav-link="leaderboard" href="leaderboard.html"><span class="nav-dot"></span><span>Leaders</span></a>
+    <a class="nav-link" data-nav-link="profile" href="profile.html"><span class="nav-dot"></span><span>Profile</span></a>
+  </nav>
+</body>
+</html>

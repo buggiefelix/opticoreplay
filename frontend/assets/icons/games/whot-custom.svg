@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
+  <defs>
+    <linearGradient id="bgGlow" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7ba0ff"/>
+      <stop offset="35%" stop-color="#ffd85a"/>
+      <stop offset="70%" stop-color="#ffb03b"/>
+      <stop offset="100%" stop-color="#8fffd8"/>
+    </linearGradient>
+    <linearGradient id="felt" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2d6e24"/>
+      <stop offset="100%" stop-color="#183f19"/>
+    </linearGradient>
+    <linearGradient id="feltInner" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4f8c31" stop-opacity=".22"/>
+      <stop offset="100%" stop-color="#0c1a10" stop-opacity=".18"/>
+    </linearGradient>
+    <linearGradient id="goldEdge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f6d86a"/>
+      <stop offset="50%" stop-color="#ffb928"/>
+      <stop offset="100%" stop-color="#8c5115"/>
+    </linearGradient>
+    <linearGradient id="coinFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffef7b"/>
+      <stop offset="55%" stop-color="#ffcb22"/>
+      <stop offset="100%" stop-color="#d98210"/>
+    </linearGradient>
+    <linearGradient id="cardFace" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fffaf0"/>
+      <stop offset="100%" stop-color="#efe7da"/>
+    </linearGradient>
+    <linearGradient id="whotFace" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#85456f"/>
+      <stop offset="100%" stop-color="#5f2349"/>
+    </linearGradient>
+    <filter id="outerGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0.3 0 1 0 0 0.45 0 0 1 0 0.95 0 0 0 1 0" result="tint"/>
+      <feMerge>
+        <feMergeNode in="tint"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#030812" flood-opacity=".45"/>
+    </filter>
+    <pattern id="feltPattern" width="54" height="54" patternUnits="userSpaceOnUse">
+      <circle cx="27" cy="27" r="11" fill="none" stroke="#8ab14c" stroke-opacity=".12" stroke-width="2"/>
+      <path d="M14 27h26M27 14v26" stroke="#b5d66b" stroke-opacity=".08" stroke-width="1.5"/>
+      <circle cx="27" cy="27" r="4" fill="#a7c95f" fill-opacity=".1"/>
+    </pattern>
+  </defs>
+
+  <rect x="46" y="42" width="420" height="428" rx="56" fill="#0a0f1d" opacity=".78" filter="url(#outerGlow)"/>
+  <rect x="52" y="48" width="408" height="416" rx="52" fill="url(#felt)" stroke="url(#bgGlow)" stroke-width="6"/>
+  <rect x="65" y="60" width="382" height="390" rx="42" fill="url(#feltPattern)" opacity=".9"/>
+  <rect x="65" y="60" width="382" height="390" rx="42" fill="url(#feltInner)"/>
+  <rect x="61" y="438" width="390" height="16" rx="8" fill="url(#goldEdge)" opacity=".55"/>
+
+  <g transform="translate(94 130) rotate(-14)" filter="url(#softShadow)">
+    <rect x="0" y="0" width="132" height="196" rx="18" fill="#e8ddce" stroke="#8c8175" stroke-width="3"/>
+    <rect x="12" y="14" width="46" height="50" rx="23" fill="#1b3150" stroke="#e0bb50" stroke-width="4"/>
+    <circle cx="35" cy="38" r="15" fill="#f0d7b8"/>
+    <path d="M19 104h42" stroke="#c14342" stroke-width="7" stroke-linecap="round" opacity=".6"/>
+    <path d="M56 164 92 98 128 164Z" fill="#bd2416"/>
+    <text x="32" y="168" font-size="44" font-weight="800" fill="#aa2130" text-anchor="middle" font-family="Georgia, serif">2</text>
+  </g>
+
+  <g transform="translate(154 84) rotate(-6)" filter="url(#softShadow)">
+    <rect x="0" y="0" width="168" height="212" rx="20" fill="url(#whotFace)" stroke="#e2c398" stroke-width="4"/>
+    <rect x="16" y="16" width="136" height="180" rx="14" fill="none" stroke="#c793b9" stroke-opacity=".22" stroke-width="3"/>
+    <text x="84" y="82" font-size="46" font-weight="700" fill="#f7ecd0" text-anchor="middle" font-family="Georgia, serif">Whot!</text>
+    <text x="84" y="50" font-size="18" font-weight="700" fill="#decaa0" text-anchor="middle" font-family="Georgia, serif">100M</text>
+  </g>
+
+  <g transform="translate(210 216) rotate(-4)" filter="url(#softShadow)">
+    <rect x="0" y="0" width="142" height="224" rx="20" fill="url(#cardFace)" stroke="#c7baab" stroke-width="3"/>
+    <text x="30" y="50" font-size="44" font-weight="700" fill="#b11f17" text-anchor="middle" font-family="Georgia, serif">2</text>
+    <polygon points="76,72 126,178 28,184" fill="#bf2014"/>
+  </g>
+
+  <g transform="translate(278 172) rotate(6)" filter="url(#softShadow)">
+    <rect x="0" y="0" width="176" height="258" rx="24" fill="url(#cardFace)" stroke="#d7ccbc" stroke-width="3"/>
+    <text x="42" y="58" font-size="50" font-weight="700" fill="#b11f17" text-anchor="middle" font-family="Georgia, serif">14</text>
+    <polygon points="102,72 162,234 34,234" fill="#b61912"/>
+    <polygon points="138,246 168,292 108,292" fill="#b61912"/>
+    <text x="136" y="244" opacity="0">.</text>
+    <g transform="translate(128 206) rotate(180)">
+      <text x="38" y="44" font-size="48" font-weight="700" fill="#9a1a18" text-anchor="middle" font-family="Georgia, serif">14</text>
+    </g>
+  </g>
+
+  <g transform="translate(328 92)" filter="url(#softShadow)">
+    <ellipse cx="64" cy="46" rx="52" ry="50" fill="#c17a17" opacity=".28"/>
+    <ellipse cx="64" cy="42" rx="52" ry="50" fill="url(#coinFill)" stroke="#ffea86" stroke-width="3"/>
+    <path d="M44 42h40M64 22v40" stroke="#b56f0d" stroke-width="8" stroke-linecap="round"/>
+  </g>
+</svg>

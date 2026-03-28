@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Opticore Play</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="dashboard.css">
+  <script src="config.js"></script>
+  <script src="script.js" defer></script>
+  <script src="dashboard.js" defer></script>
+</head>
+<body data-page="dashboard" data-protected="true" data-nav="home">
+  <div class="page-shell dashboard-shell">
+    <header class="app-topbar dashboard-topbar">
+      <a class="brand-lockup dashboard-brand-lockup" href="dashboard.html">
+        <span class="dashboard-brand-mark">
+          <img class="brand-logo dashboard-brand-logo" src="a_professional_logo_design_for_opticore_play_is.png" alt="Opticore Play logo">
+        </span>
+        <div class="brand-copy dashboard-brand-copy">
+          <strong>Opticore Play</strong>
+          <span>Game lobby and wallet center</span>
+        </div>
+      </a>
+      <div class="topbar-actions dashboard-topbar-actions">
+        <span class="info-pill dashboard-balance-pill">Balance <strong class="dashboard-balance-value dashboard-balance-loading" data-balance aria-busy="true">Loading</strong></span>
+        <a class="btn btn-secondary dashboard-wallet-btn" href="wallet.html">Wallet</a>
+      </div>
+    </header>
+
+    <section class="hero-grid dashboard-grid-shell">
+      <div class="hero-panel dashboard-hero-panel">
+        <div class="dashboard-panel-body">
+          <span class="eyebrow dashboard-tag">Welcome back</span>
+          <h1 id="dashboardWelcome" class="hero-title dashboard-headline"><span class="dashboard-headline-user">New User</span>, <span class="dashboard-headline-accent">Ready</span><br>for the next<br>win?</h1>
+          <p class="hero-copy dashboard-lead">
+            Choose a game, set your fee, and move between ranked matches, tournament brackets, and wallet actions without leaving the same flow.
+          </p>
+          <div class="hero-actions dashboard-hero-actions">
+            <a class="btn btn-primary dashboard-primary-cta" href="match.html?game=ludo">Quick Match</a>
+            <a class="btn btn-secondary dashboard-secondary-cta" href="tournaments.html">View Tournaments</a>
+          </div>
+          <div id="dashboardQuickStrip" class="dashboard-quick-strip dashboard-quick-showcase"></div>
+          <div id="dashboardStats" class="dashboard-stat-grid dashboard-stat-band"></div>
+        </div>
+      </div>
+
+      <section class="panel secondary-panel dashboard-spotlight-panel">
+        <div class="panel-head dashboard-section-head">
+          <span class="eyebrow dashboard-tag">Featured bracket</span>
+          <h2 class="panel-title dashboard-section-title">Tournament spotlight</h2>
+          <p id="dashboardTournamentIntro" class="panel-copy dashboard-section-copy">Jump into the next live bracket or warm up in practice mode first.</p>
+        </div>
+        <div id="dashboardTournament" class="dashboard-spotlight-wrap"></div>
+      </section>
+    </section>
+
+    <section class="panel dashboard-games-panel">
+      <div class="panel-head dashboard-section-head">
+        <span class="eyebrow dashboard-tag">Games</span>
+        <h2 class="panel-title dashboard-section-title">Pick your next arena.</h2>
+        <p class="panel-copy dashboard-section-copy">Every game below opens a dedicated match setup screen with ranked and practice modes.</p>
+      </div>
+      <div id="dashboardGames" class="game-grid dashboard-games-grid"></div>
+    </section>
+
+    <section class="dashboard-bottom-grid">
+      <section class="panel dashboard-activity-panel">
+        <div class="panel-head dashboard-section-head">
+          <span class="eyebrow dashboard-tag">Recent activity</span>
+          <h2 class="panel-title dashboard-section-title">Wallet and match flow</h2>
+        </div>
+        <div id="dashboardActivity" class="dashboard-activity-list"></div>
+      </section>
+
+      <div class="dashboard-side-stack">
+        <section class="panel dashboard-summary-panel">
+          <div class="panel-head dashboard-section-head">
+            <span class="eyebrow dashboard-tag">This week</span>
+            <h2 class="panel-title dashboard-section-title">Performance snapshot</h2>
+            <p class="panel-copy dashboard-section-copy">Your current seven-day pace across matches, wins, payouts, and wallet movement.</p>
+          </div>
+          <div id="dashboardSummary" class="dashboard-summary-grid"></div>
+        </section>
+
+        <section class="panel dashboard-leader-panel">
+          <div class="panel-head dashboard-section-head">
+            <span class="eyebrow dashboard-tag">Top players</span>
+            <h2 class="panel-title dashboard-section-title">Leaderboard preview</h2>
+          </div>
+          <div id="dashboardLeaderboard" class="leader-list dashboard-leader-list"></div>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <nav class="nav-bar dashboard-nav-bar">
+    <a class="nav-link" data-nav-link="home" href="dashboard.html"><span class="nav-dot"></span><span>Home</span></a>
+    <a class="nav-link" data-nav-link="wallet" href="wallet.html"><span class="nav-dot"></span><span>Wallet</span></a>
+    <a class="nav-link" data-nav-link="friends" href="friends.html"><span class="nav-dot"></span><span>Friends</span></a>
+    <a class="nav-link" data-nav-link="tournaments" href="tournaments.html"><span class="nav-dot"></span><span>Tourneys</span></a>
+    <a class="nav-link" data-nav-link="leaderboard" href="leaderboard.html"><span class="nav-dot"></span><span>Leaders</span></a>
+    <a class="nav-link" data-nav-link="profile" href="profile.html"><span class="nav-dot"></span><span>Profile</span></a>
+  </nav>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="HOME">
+<defs>
+<linearGradient id="panelBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1639A8" stop-opacity="0.55"/><stop offset="100%" stop-color="#081538" stop-opacity="1"/></linearGradient>
+<linearGradient id="activeBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0045D9"/><stop offset="100%" stop-color="#00AFFF"/></linearGradient>
+<filter id="shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000814" flood-opacity="0.5"/></filter>
+<filter id="glow" x="-80%" y="-80%" width="260%" height="260%"><feDropShadow dx="0" dy="0" stdDeviation="4" flood-color="#4FD8FF" flood-opacity="0.92"/><feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#4FD8FF" flood-opacity="0.48"/><feDropShadow dx="0" dy="0" stdDeviation="18" flood-color="#4FD8FF" flood-opacity="0.22"/></filter>
+<filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%"><feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#4FD8FF" flood-opacity="0.24"/></filter>
+</defs>
+<g filter="url(#shadow)">
+  <rect x="28" y="24" width="200" height="200" rx="40" fill="url(#panelBg)" fill-opacity="1" stroke="#4FD8FF" stroke-width="3" filter="url(#softGlow)"/>
+  <rect x="42" y="38" width="172" height="172" rx="32" fill="#0A184A" fill-opacity="1" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="2"/>
+</g>
+<g style="color:#4FD8FF" filter="url(#glow)"><path d="M80 124 L128 84 L176 124 M92 116 V170 H122 V140 H134 V170 H164 V116" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="128" y="214" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="18" letter-spacing="1.2" fill="#EAF7FF" opacity="0.96">HOME</text>
+</svg>

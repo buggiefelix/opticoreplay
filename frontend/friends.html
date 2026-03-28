@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Friends | Opticore Play</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="script.js" defer></script>
+</head>
+<body data-page="friends" data-protected="true" data-nav="friends">
+  <div class="page-shell">
+    <header class="app-topbar">
+      <a class="brand-lockup" href="dashboard.html">
+        <img class="brand-logo" src="a_professional_logo_design_for_opticore_play_is.png" alt="Opticore Play logo">
+        <div class="brand-copy">
+          <strong>Opticore Play</strong>
+          <span>Friends and social chat</span>
+        </div>
+      </a>
+      <div class="topbar-actions">
+        <span class="info-pill">Balance <strong data-balance>N0</strong></span>
+      </div>
+    </header>
+
+    <section class="social-hero-grid" style="margin-top: 22px;">
+      <section class="panel">
+        <div class="panel-head">
+          <span class="eyebrow">Network</span>
+          <h1 class="panel-title">Build your squad and keep the conversation active.</h1>
+          <p class="panel-copy">Add players as friends, accept requests, and chat before, during, and after live matches.</p>
+        </div>
+        <div id="friendsOverview" class="social-overview-grid" style="margin-top: 18px;"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <span class="eyebrow">Add friend</span>
+          <h2 class="panel-title">Find another player by username.</h2>
+          <p class="panel-copy">Send a request, wait for approval, then unlock direct chat across the app.</p>
+        </div>
+        <form id="friendSearchForm" class="field-grid" style="margin-top: 18px;">
+          <div class="field">
+            <label for="friendSearchInput">Username</label>
+            <input id="friendSearchInput" name="targetUsername" placeholder="player2">
+          </div>
+          <button class="btn btn-primary" type="submit">Send Request</button>
+        </form>
+      </section>
+    </section>
+
+    <section class="social-feed-layout" style="margin-top: 22px;">
+      <section class="panel">
+        <div class="panel-head">
+          <span class="eyebrow">Friend feed</span>
+          <h2 class="panel-title">Share updates with your network.</h2>
+          <p class="panel-copy">Post quick thoughts, wins, tournament plans, or match invites for confirmed friends to see.</p>
+        </div>
+        <form id="feedPostForm" class="chat-compose" style="margin-top: 18px;">
+          <div class="field">
+            <label for="feedPostInput">Post update</label>
+            <textarea id="feedPostInput" rows="4" maxlength="280" placeholder="Just won a ranked Ludo round. Who is next?"></textarea>
+          </div>
+          <div class="social-card-foot">
+            <span class="panel-copy">Visible to you and your confirmed friends.</span>
+            <button class="btn btn-primary" type="submit">Publish Post</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <span class="eyebrow">Network timeline</span>
+          <h2 class="panel-title">See what your friends are posting.</h2>
+          <p class="panel-copy">Fresh posts from your confirmed circle appear here automatically.</p>
+        </div>
+        <div id="friendFeedList" class="feed-list" style="margin-top: 18px;"></div>
+      </section>
+    </section>
+
+    <section class="social-layout" style="margin-top: 22px;">
+      <section class="section-stack">
+        <section class="panel">
+          <div class="panel-head">
+            <span class="eyebrow">Requests</span>
+            <h2 class="panel-title">Incoming and outgoing</h2>
+          </div>
+          <div id="friendIncoming" class="social-card-list" style="margin-top: 18px;"></div>
+          <div id="friendOutgoing" class="social-card-list" style="margin-top: 18px;"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <span class="eyebrow">Players</span>
+            <h2 class="panel-title">People to connect with</h2>
+          </div>
+          <div id="discoverPlayers" class="social-card-list" style="margin-top: 18px;"></div>
+        </section>
+      </section>
+
+      <section class="panel social-chat-panel">
+        <div class="panel-head">
+          <span class="eyebrow">Friends chat</span>
+          <h2 class="panel-title">Talk with confirmed friends.</h2>
+          <p class="panel-copy">The same conversation stays available here and inside your live match page.</p>
+        </div>
+        <div class="friends-chat-layout" style="margin-top: 18px;">
+          <div id="friendsList" class="friend-list"></div>
+          <div class="chat-thread-card">
+            <div id="chatFriendMeta"></div>
+            <div id="chatMessages" class="chat-thread" style="margin-top: 18px;"></div>
+            <form id="friendMessageForm" class="chat-compose" style="margin-top: 18px;">
+              <div class="field">
+                <label for="friendMessageInput">Message</label>
+                <textarea id="friendMessageInput" rows="3" placeholder="Choose a friend first."></textarea>
+              </div>
+              <button class="btn btn-primary" type="submit">Send Message</button>
+            </form>
+          </div>
+        </div>
+      </section>
+    </section>
+  </div>
+
+  <nav class="nav-bar">
+    <a class="nav-link" data-nav-link="home" href="dashboard.html"><span class="nav-dot"></span><span>Home</span></a>
+    <a class="nav-link" data-nav-link="wallet" href="wallet.html"><span class="nav-dot"></span><span>Wallet</span></a>
+    <a class="nav-link" data-nav-link="friends" href="friends.html"><span class="nav-dot"></span><span>Friends</span></a>
+    <a class="nav-link" data-nav-link="tournaments" href="tournaments.html"><span class="nav-dot"></span><span>Tourneys</span></a>
+    <a class="nav-link" data-nav-link="leaderboard" href="leaderboard.html"><span class="nav-dot"></span><span>Leaders</span></a>
+    <a class="nav-link" data-nav-link="profile" href="profile.html"><span class="nav-dot"></span><span>Profile</span></a>
+  </nav>
+</body>
+</html>

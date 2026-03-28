@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Play | Opticore Play</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="script.js" defer></script>
+</head>
+<body data-page="game" data-protected="true">
+  <div class="page-shell">
+    <header class="app-topbar">
+      <a class="brand-lockup" href="dashboard.html">
+        <img class="brand-logo" src="a_professional_logo_design_for_opticore_play_is.png" alt="Opticore Play logo">
+        <div class="brand-copy">
+          <strong>Opticore Play</strong>
+          <span id="activeGameSubtitle">Live match</span>
+        </div>
+      </a>
+      <div class="topbar-actions">
+        <span class="info-pill">Balance <strong data-balance>N0</strong></span>
+        <button id="forfeitButton" class="btn btn-danger" type="button">Quit Match</button>
+      </div>
+    </header>
+
+    <section class="game-layout" style="margin-top: 22px;">
+      <section class="panel">
+        <div class="stage-head">
+          <div>
+            <span id="activeGameTag" class="eyebrow">Game</span>
+            <h1 id="activeGameTitle" class="panel-title">Loading match...</h1>
+            <p id="activeGameCopy" class="panel-copy">Preparing your board.</p>
+          </div>
+          <div id="activeGameChip" class="game-badge">GM</div>
+        </div>
+
+        <div class="button-row" style="margin-top: 18px;">
+          <span id="matchModeChip" class="status-chip">Practice</span>
+          <span id="matchStakeChip" class="info-pill">Stake N0</span>
+          <span id="matchDifficultyChip" class="info-pill">Balanced bot</span>
+        </div>
+
+        <div id="whotAudioControls" class="whot-audio-controls" hidden></div>
+
+        <div class="board-panel" style="margin-top: 18px;">
+          <div id="gameCanvas"></div>
+        </div>
+      </section>
+
+      <aside class="side-stack stage-note-grid">
+        <div class="top-tabs" role="tablist" aria-label="Game side panels">
+          <button class="switch-tab active" data-game-panel-tab="game" role="tab" aria-selected="true" type="button">Game</button>
+          <button class="switch-tab" data-game-panel-tab="chat" role="tab" aria-selected="false" type="button">Chat</button>
+          <button class="switch-tab" data-game-panel-tab="rules" role="tab" aria-selected="false" type="button">Rules</button>
+        </div>
+        <section class="side-card">
+          <div class="side-inner">
+            <div class="side-panel active" data-game-panel="game" role="tabpanel">
+              <span class="eyebrow">Match notes</span>
+              <h2 class="side-title">Status</h2>
+              <div id="gameNotes" class="note-list" style="margin-top: 18px;"></div>
+            </div>
+            <div class="side-panel" data-game-panel="rules" role="tabpanel" hidden>
+              <span class="eyebrow">Controls</span>
+              <h2 class="side-title">How to play</h2>
+              <div id="gameControls" class="note-list" style="margin-top: 18px;"></div>
+            </div>
+            <div class="side-panel" data-game-panel="chat" role="tabpanel" hidden>
+              <span class="eyebrow">Friends chat</span>
+              <h2 class="side-title">Talk during the match</h2>
+              <p class="panel-copy">Choose a confirmed friend and keep chatting while your live match stays active.</p>
+              <div id="matchFriendsList" class="friend-list compact" style="margin-top: 18px;"></div>
+              <div class="chat-thread-card compact" style="margin-top: 18px;">
+                <div id="matchChatMeta"></div>
+                <div id="matchChatMessages" class="chat-thread compact" style="margin-top: 18px;"></div>
+                <form id="matchChatForm" class="chat-compose compact" style="margin-top: 18px;">
+                  <div class="field">
+                    <label for="matchChatInput">Message</label>
+                    <textarea id="matchChatInput" rows="3" placeholder="Choose a friend first."></textarea>
+                  </div>
+                  <button class="btn btn-primary" type="submit">Send Live Chat</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </div>
+
+  <div id="resultOverlay" class="result-overlay hidden">
+    <div class="result-overlay-card">
+      <div class="result-overlay-burst" aria-hidden="true"></div>
+      <span id="resultEyebrow" class="eyebrow">Match finished</span>
+      <h2 id="resultTitle" class="panel-title">Result</h2>
+      <p id="resultCopy" class="panel-copy">Your wallet and history will update after this screen.</p>
+      <div id="resultSummary" class="section-stack" style="margin: 22px 0;"></div>
+      <div class="result-overlay-actions">
+        <button id="resultReplayButton" class="btn btn-primary" type="button">Play Again</button>
+        <button id="resultContinueButton" class="btn btn-ghost" type="button">Return to Lobby</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

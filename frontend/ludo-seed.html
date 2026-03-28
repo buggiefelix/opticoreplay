@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ludo Seed</title>
+</head>
+<body>
+  <script>
+    const STORAGE_KEYS = {
+      user: "opticore_user",
+      match: "opticore_active_match",
+      gameState: "opticore_game_state",
+      debugRolls: "opticore_ludo_debug_rolls"
+    };
+
+    const scenarios = {
+      fresh: null,
+      rolled: {
+        players: {
+          green: { tokens: [-1, -1, -1, -1] },
+          red: { tokens: [-1, -1, -1, -1] },
+          yellow: { tokens: [-1, -1, -1, -1] },
+          blue: { tokens: [-1, -1, -1, -1] }
+        },
+        turn: "green",
+        dice: [6, 2],
+        selectedDie: null,
+        winner: null,
+        note: "Seeded roll 6 and 2. Pick a die, then move a green chip.",
+        turnCount: 0,
+        seatMode: 4
+      },
+      running: {
+        players: {
+          green: { tokens: [0, -1, -1, -1] },
+          red: { tokens: [-1, -1, -1, -1] },
+          yellow: { tokens: [-1, -1, -1, -1] },
+          blue: { tokens: [-1, -1, -1, -1] }
+        },
+        turn: "green",
+        dice: [null, 2],
+        selectedDie: 1,
+        winner: null,
+        note: "Seeded follow-up. Use die 2 to continue from the gate square.",
+        turnCount: 1,
+        seatMode: 4
+      },
+      alignment: {
+        players: {
+          green: { tokens: [0, 6, -1, -1] },
+          red: { tokens: [0, 6, -1, -1] },
+          yellow: { tokens: [0, 6, -1, -1] },
+          blue: { tokens: [0, 6, -1, -1] }
+        },
+        turn: "green",
+        dice: [3, 4],
+        selectedDie: null,
+        winner: null,
+        note: "Alignment seed. Check live token positions against the printed path.",
+        turnCount: 5,
+        seatMode: 4
+      },
+      laneGoalFive: {
+        players: {
+          green: { tokens: [-1, -1, -1, -1] },
+          red: { tokens: [-1, -1, -1, -1] },
+          yellow: { tokens: [-1, -1, -1, -1] },
+          blue: { tokens: [51, -1, -1, -1] }
+        },
+        matchMode: "stake",
+        turn: "blue",
+        dice: [5],
+        selectedDie: 0,
+        winner: null,
+        note: "Goal-on-five seed. The first blue home-lane cell should finish with 5.",
+        turnCount: 3,
+        seatMode: 4
+      },
+      laneGoalSixBlocked: {
+        players: {
+          green: { tokens: [-1, -1, -1, -1] },
+          red: { tokens: [-1, -1, -1, -1] },
+          yellow: { tokens: [-1, -1, -1, -1] },
+          blue: { tokens: [51, -1, -1, -1] }
+        },
+        matchMode: "stake",
+        turn: "blue",
+        dice: [6],
+        selectedDie: 0,
+        winner: null,
+        note: "Block-on-six seed. The first blue home-lane cell should not move with 6.",
+        turnCount: 3,
+        seatMode: 4
+      },
+      doubleSixChain: {
+        players: {
+          green: { tokens: [-1, -1, -1, -1] },
+          red: { tokens: [-1, -1, -1, -1] },
+          yellow: { tokens: [-1, -1, -1, -1] },
+          blue: { tokens: [-1, -1, -1, -1] }
+        },
+        turn: "green",
+        dice: null,
+        selectedDie: null,
+        winner: null,
+        note: "Double-six seed. Roll the center dice to test chained sixes.",
+        turnCount: 0,
+        seatMode: 4,
+        debugRolls: [6, 6, 6, 6, 3, 2]
+      },
+      captureGoal: {
+        players: {
+          green: { tokens: [0, -1, -1, -1] },
+          red: { tokens: [40, -1, -1, -1] },
+          yellow: { tokens: [-1, -1, -1, -1] },
+          blue: { tokens: [-1, -1, -1, -1] }
+        },
+        turn: "green",
+        dice: [1],
+        selectedDie: 0,
+        winner: null,
+        note: "Capture seed. Move the live green chip onto the red chip to test cover-to-goal.",
+        turnCount: 2,
+        seatMode: 4
+      },
+      practiceBotTurn: {
+        players: {
+          green: { tokens: [-1, -1, -1, -1] },
+          red: { tokens: [-1, -1, -1, -1] },
+          yellow: { tokens: [-1, -1, -1, -1] },
+          blue: { tokens: [-1, -1, -1, -1] }
+        },
+        turn: "red",
+        dice: null,
+        selectedDie: null,
+        winner: null,
+        note: "Practice bot seed. Red should auto-roll and play as a bot seat.",
+        turnCount: 0,
+        seatMode: 4,
+        debugRolls: [6, 1]
+      },
+      practiceTwoPlayerBot: {
+        players: {
+          green: { tokens: [-1, -1, -1, -1] },
+          red: { tokens: [-1, -1, -1, -1] },
+          yellow: { tokens: [-1, -1, -1, -1] },
+          blue: { tokens: [-1, -1, -1, -1] }
+        },
+        turn: "red",
+        dice: null,
+        selectedDie: null,
+        winner: null,
+        note: "Practice two-player bot seed. The bot seat should auto-roll on red and blue.",
+        turnCount: 0,
+        seatMode: 2,
+        colorOwners: {
+          green: "player1",
+          yellow: "player1",
+          red: "player2",
+          blue: "player2"
+        },
+        debugRolls: [6, 1]
+      }
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const scenario = params.get("scenario") || "fresh";
+    const state = scenarios[scenario] ?? scenarios.fresh;
+
+    localStorage.setItem(STORAGE_KEYS.user, JSON.stringify({
+      username: "buggiefelix",
+      coins: 20000,
+      wins: 6,
+      games: 10
+    }));
+
+    localStorage.setItem(STORAGE_KEYS.match, JSON.stringify({
+      id: `seed-${scenario}`,
+      game: "ludo",
+      mode: state && state.matchMode ? state.matchMode : "practice",
+      cost: 0,
+      difficulty: "balanced",
+      ...(state && Number.isInteger(state.seatMode) ? { ludoSeatMode: state.seatMode } : {}),
+      ...(state && state.colorOwners ? { ludoColorOwners: state.colorOwners } : {})
+    }));
+
+    if (state) {
+      localStorage.setItem(STORAGE_KEYS.gameState, JSON.stringify(state));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.gameState);
+    }
+
+    const debugRolls = state && Array.isArray(state.debugRolls) ? state.debugRolls : null;
+    if (debugRolls) {
+      localStorage.setItem(STORAGE_KEYS.debugRolls, JSON.stringify(debugRolls));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.debugRolls);
+    }
+
+    window.location.replace("game.html");
+  </script>
+</body>
+</html>

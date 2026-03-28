@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin | Opticore Play</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="script.js" defer></script>
+</head>
+<body data-page="admin">
+  <div class="page-shell">
+    <header class="app-topbar">
+      <a class="brand-lockup" href="dashboard.html">
+        <img class="brand-logo" src="a_professional_logo_design_for_opticore_play_is.png" alt="Opticore Play logo">
+        <div class="brand-copy">
+          <strong>Opticore Play</strong>
+          <span>Admin overview</span>
+        </div>
+      </a>
+      <div class="topbar-actions">
+        <a class="btn btn-ghost" href="dashboard.html">Back to App</a>
+      </div>
+    </header>
+
+    <section class="admin-grid" style="margin-top: 22px;">
+      <section class="section-stack">
+        <div class="panel">
+          <span class="eyebrow">Users</span>
+          <div id="adminUsers" class="leader-list" style="margin-top: 18px;"></div>
+        </div>
+        <div class="panel">
+          <span class="eyebrow">Withdrawals</span>
+          <div id="adminWithdrawals" class="history-list" style="margin-top: 18px;"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <span class="eyebrow">History</span>
+        <h2 class="panel-title">Recent session log</h2>
+        <div id="adminHistory" class="history-list" style="margin-top: 18px;"></div>
+      </section>
+    </section>
+  </div>
+</body>
+</html>

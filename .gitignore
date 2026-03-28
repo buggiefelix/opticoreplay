@@ -1,0 +1,32 @@
+node_modules/
+backend/node_modules/
+backend/package.json
+backend/package-lock.json
+dist/
+.vercel/
+.render/
+.npm-cache/
+.playwright-cli/
+.tmp-edge/
+.tmp-playwright-check/
+output/
+playwright-tools/
+server*.log
+server*.out
+server*.err
+*.log
+.env
+.env.local
+.env.*.local
+database/app-data.json
+backend/users.json
+npm
+progress.md
+pdf-native-page-*.png
+pdf-page-*.png
+playwright-actions-*.json
+C9920203-7374-42EA-AACF-67E9DD0D1CF1*
+Ludo dice sound/
+whot sound/
+opticoreplay_game_icon_system/
+opticoreplay_whot_style3_deck/

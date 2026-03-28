@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register | Opticore Play</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="script.js" defer></script>
+</head>
+<body data-page="register">
+  <div class="auth-shell">
+    <div class="auth-grid">
+      <section class="auth-card auth-art">
+        <span class="eyebrow">Create your profile</span>
+        <h1 class="hero-title" style="font-size: clamp(2.3rem, 5vw, 3.8rem);">Start with a funded account and jump straight into the game center.</h1>
+        <p class="hero-copy">Every new Opticore Play account starts with a welcome bonus so you can test ranked and practice modes immediately.</p>
+        <div class="auth-logo-frame">
+          <img src="a_professional_logo_design_for_opticore_play_is.png" alt="Opticore Play logo">
+        </div>
+      </section>
+
+      <section class="auth-card">
+        <span class="eyebrow">Register</span>
+        <h2 class="panel-title">Open your account</h2>
+        <p class="panel-copy">Create a profile to unlock the dashboard, wallet, tournaments, and all playable games.</p>
+        <p id="registerStatus" class="auth-status" role="status" aria-live="polite" hidden></p>
+        <form id="registerForm">
+          <div class="field">
+            <label for="registerUsername">Username</label>
+            <input id="registerUsername" name="username" autocomplete="username" required>
+          </div>
+          <div class="field">
+            <label for="registerEmail">Email</label>
+            <input id="registerEmail" name="email" type="email" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="registerPassword">Password</label>
+            <input id="registerPassword" name="password" type="password" autocomplete="new-password" required>
+          </div>
+          <button class="btn btn-primary" type="submit">Create Account</button>
+        </form>
+        <div class="footer-line">
+          Already registered? <a class="accent-text" href="login.html">Login instead</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

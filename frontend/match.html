@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Match Setup | Opticore Play</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="script.js" defer></script>
+</head>
+<body data-page="match" data-protected="true" data-nav="games">
+  <div class="page-shell">
+    <header class="app-topbar">
+      <a class="brand-lockup" href="dashboard.html">
+        <img class="brand-logo" src="a_professional_logo_design_for_opticore_play_is.png" alt="Opticore Play logo">
+        <div class="brand-copy">
+          <strong>Opticore Play</strong>
+          <span>Match setup</span>
+        </div>
+      </a>
+      <div class="topbar-actions">
+        <span class="info-pill">Balance <strong data-balance>N0</strong></span>
+        <a class="btn btn-ghost" href="dashboard.html">Back</a>
+      </div>
+    </header>
+
+    <section class="match-layout match-layout-premium" style="margin-top: 22px;">
+      <section class="panel match-setup-panel">
+        <span class="eyebrow">Game lobby</span>
+        <div class="stage-head" style="margin-top: 14px;">
+          <div>
+            <h1 id="matchGameTitle" class="panel-title">Match Setup</h1>
+            <p id="matchGameCopy" class="panel-copy">Choose your game plan, stake, and difficulty.</p>
+          </div>
+          <div id="matchGameBadge" class="game-badge">LU</div>
+        </div>
+
+        <div class="section-stack match-option-stack" style="margin-top: 22px;">
+          <div class="match-summary-card match-choice-card">
+            <small>Entry Fee</small>
+            <div class="choice-row" id="feeChoices"></div>
+          </div>
+          <div class="match-summary-card match-choice-card">
+            <small>Mode</small>
+            <div class="choice-row" id="modeChoices"></div>
+          </div>
+          <div id="ludoSetupCard" class="match-summary-card match-choice-card" hidden>
+            <small>Ludo Table</small>
+            <div class="choice-row" id="ludoSeatChoices"></div>
+            <div id="ludoDraftPanel" class="ludo-draft-panel"></div>
+          </div>
+          <div class="match-summary-card match-choice-card">
+            <small>Bot difficulty</small>
+            <div class="choice-row" id="difficultyChoices"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel match-summary-panel">
+        <span class="eyebrow">Summary</span>
+        <h2 class="panel-title">Ready to queue?</h2>
+        <p class="panel-copy">Ranked mode deducts your entry fee now and credits winnings after the result screen. Practice mode stays free.</p>
+        <div id="matchSummary" class="section-stack" style="margin-top: 18px;"></div>
+        <div class="button-row match-summary-actions" style="margin-top: 22px;">
+          <button id="startMatchButton" class="btn btn-primary match-primary-action" type="button">Start Solo Match</button>
+          <a class="btn btn-ghost match-secondary-action" href="dashboard.html">Choose another game</a>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel match-private-panel" style="margin-top: 22px;">
+      <span class="eyebrow">Private Match</span>
+      <h2 class="panel-title">Create or Join With Match ID</h2>
+      <p class="panel-copy">Create a shareable private room for this game, or paste a match ID someone sent you to join it.</p>
+      <div id="privateMatchPanel" class="section-stack" style="margin-top: 18px;"></div>
+    </section>
+
+    <section class="content-grid match-support-grid" style="margin-top: 22px;">
+      <section class="panel match-notes-panel">
+        <span class="eyebrow">How it plays</span>
+        <h2 class="panel-title">Game notes</h2>
+        <div id="matchRules" class="note-list" style="margin-top: 18px;"></div>
+      </section>
+
+      <section class="panel match-flow-panel">
+        <span class="eyebrow">Why this mode works</span>
+        <h2 class="panel-title">Quick decisions, cleaner flow</h2>
+        <div class="note-list" style="margin-top: 18px;">
+          <div class="mini-panel">
+            <small>Practice mode</small>
+            <strong>No stake required.</strong>
+            <p class="panel-copy">Use practice rounds to learn controls and test strategy without touching your balance.</p>
+          </div>
+          <div class="mini-panel">
+            <small>Ranked mode</small>
+            <strong>Wallet-aware rewards.</strong>
+            <p class="panel-copy">Entry fees and winnings both appear in your wallet history and profile log immediately.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+  </div>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Opticore Play</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="script.js" defer></script>
+</head>
+<body data-page="login">
+  <div class="auth-shell">
+    <div class="auth-grid">
+      <section class="auth-card auth-art">
+        <span class="eyebrow">Welcome back</span>
+        <h1 class="hero-title" style="font-size: clamp(2.3rem, 5vw, 3.8rem);">Return to the lobby, fund up, and queue your next game.</h1>
+        <p class="hero-copy">Use the account you created to access your wallet, match history, leaderboard rank, and all five playable games.</p>
+        <div class="auth-logo-frame">
+          <img src="a_professional_logo_design_for_opticore_play_is.png" alt="Opticore Play logo">
+        </div>
+      </section>
+
+      <section class="auth-card">
+        <span class="eyebrow">Login</span>
+        <h2 class="panel-title">Sign in to Opticore Play</h2>
+        <p class="panel-copy">Your starting balance, tournament history, and rankings are waiting.</p>
+        <p id="loginStatus" class="auth-status" role="status" aria-live="polite" hidden></p>
+        <form id="loginForm">
+          <div class="field">
+            <label for="loginUsername">Username or Email</label>
+            <input id="loginUsername" name="username" autocomplete="username" placeholder="Enter your username or email" required>
+          </div>
+          <div class="field">
+            <label for="loginPassword">Password</label>
+            <input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+          </div>
+          <button class="btn btn-primary" type="submit">Login</button>
+        </form>
+        <div class="footer-line">
+          New here? <a class="accent-text" href="register.html">Create an account</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "opticoreplay",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js",
+    "build": "npm run build:frontend",
+    "build:frontend": "node scripts/build-frontend.mjs"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "mongodb": "^6.17.0"
+  }
+}
