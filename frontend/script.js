@@ -1110,6 +1110,15 @@ function enhanceTopbarProfile(user) {
     return;
   }
 
+  const bottomNavProfileLinks = Array.from(document.querySelectorAll('.nav-bar [data-nav-link="profile"]'));
+  const shouldKeepProfileInBottomNav = typeof window !== "undefined"
+    && window.matchMedia("(max-width: 720px)").matches
+    && bottomNavProfileLinks.length > 0;
+
+  if (shouldKeepProfileInBottomNav) {
+    return;
+  }
+
   const profileLink = document.createElement("a");
   const currentPage = document.body.dataset.page || "";
   profileLink.href = "profile.html";
@@ -1131,7 +1140,7 @@ function enhanceTopbarProfile(user) {
     actions.appendChild(profileLink);
   }
 
-  document.querySelectorAll('.nav-bar [data-nav-link="profile"]').forEach((link) => {
+  bottomNavProfileLinks.forEach((link) => {
     link.remove();
   });
 }
