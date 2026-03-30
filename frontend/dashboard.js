@@ -1,5 +1,6 @@
 (function dashboardPageEnhancements() {
   const DASHBOARD_PAGE = "dashboard";
+  const MOBILE_DETAIL_MEDIA = "(max-width: 720px)";
   const HYDRATED_TARGETS = [
     "dashboardQuickStrip",
     "dashboardStats",
@@ -13,6 +14,7 @@
     "button",
     "a.btn",
     ".dashboard-wallet-btn",
+    ".dashboard-lobby-chip",
     ".nav-link",
     ".quick-entry-card",
     ".game-link-card",
@@ -155,6 +157,74 @@
     }
   }
 
+  function initDashboardDetailSwitch() {
+    if (!isDashboardPage()) {
+      return;
+    }
+
+    const tabs = Array.from(document.querySelectorAll("[data-dashboard-detail-target]"));
+    const panels = Array.from(document.querySelectorAll("[data-dashboard-detail-panel]"));
+    const sideStack = document.querySelector(".dashboard-side-stack");
+    const mediaQuery = typeof window.matchMedia === "function"
+      ? window.matchMedia(MOBILE_DETAIL_MEDIA)
+      : null;
+
+    if (!tabs.length || !panels.length || !mediaQuery) {
+      return;
+    }
+
+    const panelLookup = new Map(
+      panels.map((panel) => [panel.getAttribute("data-dashboard-detail-panel"), panel])
+    );
+    let activeTarget = tabs.find((tab) => tab.classList.contains("is-current"))?.getAttribute("data-dashboard-detail-target")
+      || tabs[0].getAttribute("data-dashboard-detail-target")
+      || "activity";
+
+    const syncDetailView = () => {
+      const mobileLayout = mediaQuery.matches;
+
+      tabs.forEach((tab) => {
+        const target = tab.getAttribute("data-dashboard-detail-target");
+        const current = target === activeTarget;
+        tab.classList.toggle("is-current", current);
+        tab.setAttribute("aria-pressed", current ? "true" : "false");
+      });
+
+      panels.forEach((panel) => {
+        const panelName = panel.getAttribute("data-dashboard-detail-panel");
+        panel.hidden = mobileLayout && panelName !== activeTarget;
+      });
+
+      if (sideStack) {
+        sideStack.hidden = mobileLayout && activeTarget === "activity";
+      }
+    };
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const target = tab.getAttribute("data-dashboard-detail-target");
+        if (!target || !panelLookup.has(target)) {
+          return;
+        }
+
+        activeTarget = target;
+        syncDetailView();
+      });
+    });
+
+    const handleViewportChange = () => {
+      syncDetailView();
+    };
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleViewportChange);
+    } else if (typeof mediaQuery.addListener === "function") {
+      mediaQuery.addListener(handleViewportChange);
+    }
+
+    syncDetailView();
+  }
+
   window.initDashboardPage = function initDashboardPage() {
     if (!isDashboardPage()) {
       return;
@@ -178,6 +248,7 @@
       return;
     }
     applyDashboardLoadingState();
+    initDashboardDetailSwitch();
     document.addEventListener("click", playClickFeedback, true);
   });
 })();

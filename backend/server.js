@@ -69,6 +69,9 @@ const DEFAULT_CORS_ORIGIN_PATTERNS = [
   "http://127.0.0.1:5173",
   "http://localhost:5173"
 ];
+const DEFAULT_WELCOME_TOKENS = 2500;
+const TOKEN_EXCHANGE_RATE = 1;
+const MAX_WALLET_BALANCE = 50000000;
 
 function useMongoStore() {
   return Boolean(MONGODB_URI);
@@ -134,6 +137,10 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static(FRONTEND_DIR));
 
+app.get("/favicon.ico", (_req, res) => {
+  res.sendFile(path.join(FRONTEND_DIR, "a_professional_logo_design_for_opticore_play_is.png"));
+});
+
 function createId(prefix) {
   return `${prefix}-${crypto.randomBytes(5).toString("hex")}`;
 }
@@ -148,6 +155,10 @@ function clampNumber(value, min, max) {
     return min;
   }
   return Math.min(max, Math.max(min, number));
+}
+
+function clampWalletBalance(value) {
+  return clampNumber(value, 0, MAX_WALLET_BALANCE);
 }
 
 const LUDO_COLORS = ["green", "red", "yellow", "blue"];
@@ -381,11 +392,69 @@ function verifyPassword(password, storedHash) {
 
 function sortByCoins(users) {
   return [...users].sort((left, right) => {
-    if (right.coins !== left.coins) {
-      return right.coins - left.coins;
+    const rightTokens = getUserTokenBalance(right);
+    const leftTokens = getUserTokenBalance(left);
+    if (rightTokens !== leftTokens) {
+      return rightTokens - leftTokens;
     }
     return right.wins - left.wins;
   });
+}
+
+function getUserCashBalance(user) {
+  return clampWalletBalance(user && user.cashBalance !== undefined ? user.cashBalance : 0);
+}
+
+function getUserTokenBalance(user) {
+  const source = user && user.tokenBalance !== undefined && user.tokenBalance !== null
+    ? user.tokenBalance
+    : user && user.coins !== undefined
+      ? user.coins
+      : 0;
+  return clampWalletBalance(source);
+}
+
+function syncUserWallet(user) {
+  if (!user) {
+    return null;
+  }
+
+  user.cashBalance = getUserCashBalance(user);
+  user.tokenBalance = getUserTokenBalance(user);
+  user.coins = user.tokenBalance;
+  return user;
+}
+
+function setUserCashBalance(user, amount) {
+  user.cashBalance = clampWalletBalance(amount);
+  return syncUserWallet(user);
+}
+
+function setUserTokenBalance(user, amount) {
+  user.tokenBalance = clampWalletBalance(amount);
+  return syncUserWallet(user);
+}
+
+function tokensFromCash(amount) {
+  return clampWalletBalance(Math.round(Number(amount || 0) * TOKEN_EXCHANGE_RATE));
+}
+
+function cashFromTokens(amount) {
+  return clampWalletBalance(Math.round(Number(amount || 0) / TOKEN_EXCHANGE_RATE));
+}
+
+function inferTransactionWallet(type, wallet = "") {
+  const normalizedWallet = String(wallet || "").trim().toLowerCase();
+  if (normalizedWallet === "cash" || normalizedWallet === "token") {
+    return normalizedWallet;
+  }
+
+  const normalizedType = String(type || "").trim().toLowerCase();
+  if (normalizedType.includes("deposit") || normalizedType.includes("withdraw")) {
+    return "cash";
+  }
+
+  return "token";
 }
 
 function getUser(data, username) {
@@ -472,11 +541,15 @@ function buildPrivateMatchStatePayload(session, viewerUsername = "") {
 }
 
 function publicUser(user) {
+  const tokenBalance = getUserTokenBalance(user);
+  const cashBalance = getUserCashBalance(user);
   return {
     id: user.id,
     username: user.username,
     email: user.email,
-    coins: user.coins,
+    coins: tokenBalance,
+    tokenBalance,
+    cashBalance,
     wins: user.wins,
     games: user.games,
     isBanned: Boolean(user.isBanned),
@@ -486,10 +559,14 @@ function publicUser(user) {
 }
 
 function recordTransaction(data, transaction) {
+  const entry = {
+    ...transaction,
+    wallet: inferTransactionWallet(transaction.type, transaction.wallet)
+  };
   data.transactions.unshift({
     id: createId("tx"),
     createdAt: now(),
-    ...transaction
+    ...entry
   });
 }
 
@@ -502,7 +579,9 @@ function seedLegacyUser(rawUser, index) {
     username,
     email,
     passwordHash: hashPassword("play1234"),
-    coins: clampNumber(rawUser.coins || 2500, 0, 500000),
+    cashBalance: 0,
+    tokenBalance: clampWalletBalance(rawUser.coins || DEFAULT_WELCOME_TOKENS),
+    coins: clampWalletBalance(rawUser.coins || DEFAULT_WELCOME_TOKENS),
     wins: 0,
     games: 0,
     isBanned: false,
@@ -554,7 +633,9 @@ function createDefaultStore(legacyUsers) {
           username: "opticore demo",
           email: "demo@opticore.local",
           passwordHash: hashPassword("play1234"),
-          coins: 2500,
+          cashBalance: 0,
+          tokenBalance: DEFAULT_WELCOME_TOKENS,
+          coins: DEFAULT_WELCOME_TOKENS,
           wins: 4,
           games: 7,
           isBanned: false,
@@ -564,7 +645,7 @@ function createDefaultStore(legacyUsers) {
       ];
 
   return {
-    version: 4,
+    version: 5,
     users,
     transactions: [],
     withdrawals: [],
@@ -579,7 +660,7 @@ function createDefaultStore(legacyUsers) {
 }
 
 function normalizeStore(data) {
-  data.version = 4;
+  data.version = 5;
   data.users = Array.isArray(data.users) ? data.users : [];
   data.transactions = Array.isArray(data.transactions) ? data.transactions : [];
   data.withdrawals = Array.isArray(data.withdrawals) ? data.withdrawals : [];
@@ -589,6 +670,35 @@ function normalizeStore(data) {
   data.friendRequests = Array.isArray(data.friendRequests) ? data.friendRequests : [];
   data.messages = Array.isArray(data.messages) ? data.messages : [];
   data.posts = Array.isArray(data.posts) ? data.posts : [];
+
+  for (const user of data.users) {
+    syncUserWallet(user);
+    user.wins = clampNumber(user.wins || 0, 0, MAX_WALLET_BALANCE);
+    user.games = clampNumber(user.games || 0, 0, MAX_WALLET_BALANCE);
+    user.isBanned = Boolean(user.isBanned);
+    user.favoriteGame = user.favoriteGame || "ludo";
+    user.joinedAt = user.joinedAt || now();
+  }
+
+  for (const transaction of data.transactions) {
+    transaction.amount = Math.round(Number(transaction.amount || 0));
+    transaction.cashAmount = transaction.cashAmount === undefined
+      ? undefined
+      : Math.round(Number(transaction.cashAmount || 0));
+    transaction.wallet = inferTransactionWallet(transaction.type, transaction.wallet);
+    transaction.status = transaction.status || "success";
+    transaction.reference = transaction.reference || null;
+    transaction.createdAt = transaction.createdAt || now();
+  }
+
+  for (const withdrawal of data.withdrawals) {
+    withdrawal.amount = clampWalletBalance(withdrawal.amount || 0);
+    withdrawal.bankName = normalizeUsername(withdrawal.bankName);
+    withdrawal.accountName = normalizeUsername(withdrawal.accountName);
+    withdrawal.accountNumber = normalizeUsername(withdrawal.accountNumber);
+    withdrawal.status = withdrawal.status || "pending";
+    withdrawal.createdAt = withdrawal.createdAt || now();
+  }
 
   if (!Array.isArray(data.tournaments) || data.tournaments.length === 0) {
     data.tournaments = TOURNAMENT_TEMPLATES.map((item) => ({ ...item }));
@@ -1078,7 +1188,7 @@ function socialSnapshot(data, username) {
         return rightTime - leftTime;
       }
 
-      return right.coins - left.coins;
+      return getUserTokenBalance(right) - getUserTokenBalance(left);
     });
 
   const incomingRequests = data.friendRequests
@@ -1181,7 +1291,9 @@ app.post("/api/register", async (req, res) => {
         username,
         email,
         passwordHash: hashPassword(password),
-        coins: 2500,
+        cashBalance: 0,
+        tokenBalance: DEFAULT_WELCOME_TOKENS,
+        coins: DEFAULT_WELCOME_TOKENS,
         wins: 0,
         games: 0,
         isBanned: false,
@@ -1193,8 +1305,9 @@ app.post("/api/register", async (req, res) => {
 
       recordTransaction(data, {
         username,
-        type: "welcome_bonus",
-        amount: 2500,
+        type: "token_welcome_bonus",
+        amount: DEFAULT_WELCOME_TOKENS,
+        wallet: "token",
         status: "success",
         reference: null
       });
@@ -1572,12 +1685,13 @@ app.post("/api/wallet/deposit", async (req, res) => {
         throw new Error("User not found.");
       }
 
-      account.coins += amount;
+      setUserCashBalance(account, getUserCashBalance(account) + amount);
 
       recordTransaction(data, {
         username,
-        type: "deposit",
+        type: "cash_deposit",
         amount,
+        wallet: "cash",
         status: "success",
         reference: createId("dep")
       });
@@ -1609,11 +1723,11 @@ app.post("/api/wallet/withdraw", async (req, res) => {
         throw new Error("User not found.");
       }
 
-      if (user.coins < amount) {
-        throw new Error("Insufficient balance.");
+      if (getUserCashBalance(user) < amount) {
+        throw new Error("Insufficient cash balance.");
       }
 
-      user.coins -= amount;
+      setUserCashBalance(user, getUserCashBalance(user) - amount);
 
       const withdrawal = {
         id: createId("wd"),
@@ -1630,8 +1744,9 @@ app.post("/api/wallet/withdraw", async (req, res) => {
 
       recordTransaction(data, {
         username,
-        type: "withdraw_request",
+        type: "cash_withdraw_request",
         amount: -amount,
+        wallet: "cash",
         status: "pending",
         reference: withdrawal.id
       });
@@ -1645,6 +1760,84 @@ app.post("/api/wallet/withdraw", async (req, res) => {
     res.json(payload);
   } catch (error) {
     sendError(res, 400, error.message || "Withdrawal failed.");
+  }
+});
+
+app.post("/api/wallet/buy-tokens", async (req, res) => {
+  try {
+    const username = normalizeUsername(req.body.username);
+    const cashAmount = clampNumber(req.body.amount, 100, 100000);
+    const tokenAmount = tokensFromCash(cashAmount);
+
+    const user = await mutateStore(async (data) => {
+      const account = getUser(data, username);
+      if (!account) {
+        throw new Error("User not found.");
+      }
+
+      if (getUserCashBalance(account) < cashAmount) {
+        throw new Error("Not enough cash balance to buy tokens.");
+      }
+
+      setUserCashBalance(account, getUserCashBalance(account) - cashAmount);
+      setUserTokenBalance(account, getUserTokenBalance(account) + tokenAmount);
+
+      recordTransaction(data, {
+        username,
+        type: "token_purchase",
+        amount: tokenAmount,
+        cashAmount: -cashAmount,
+        wallet: "token",
+        rate: TOKEN_EXCHANGE_RATE,
+        status: "success",
+        reference: createId("swap")
+      });
+
+      return publicUser(account);
+    });
+
+    res.json(user);
+  } catch (error) {
+    sendError(res, 400, error.message || "Could not buy tokens.");
+  }
+});
+
+app.post("/api/wallet/sell-tokens", async (req, res) => {
+  try {
+    const username = normalizeUsername(req.body.username);
+    const tokenAmount = clampNumber(req.body.amount, 100, 100000);
+    const cashAmount = cashFromTokens(tokenAmount);
+
+    const user = await mutateStore(async (data) => {
+      const account = getUser(data, username);
+      if (!account) {
+        throw new Error("User not found.");
+      }
+
+      if (getUserTokenBalance(account) < tokenAmount) {
+        throw new Error("Not enough tokens to convert.");
+      }
+
+      setUserTokenBalance(account, getUserTokenBalance(account) - tokenAmount);
+      setUserCashBalance(account, getUserCashBalance(account) + cashAmount);
+
+      recordTransaction(data, {
+        username,
+        type: "token_sale",
+        amount: -tokenAmount,
+        cashAmount,
+        wallet: "token",
+        rate: TOKEN_EXCHANGE_RATE,
+        status: "success",
+        reference: createId("swap")
+      });
+
+      return publicUser(account);
+    });
+
+    res.json(user);
+  } catch (error) {
+    sendError(res, 400, error.message || "Could not sell tokens.");
   }
 });
 
@@ -1686,11 +1879,11 @@ app.post("/api/tournaments/join", async (req, res) => {
         throw new Error("Tournament is already full.");
       }
 
-      if (user.coins < tournament.entryFee) {
-        throw new Error("Not enough balance to join this tournament.");
+      if (getUserTokenBalance(user) < tournament.entryFee) {
+        throw new Error("Not enough tokens to join this tournament.");
       }
 
-      user.coins -= tournament.entryFee;
+      setUserTokenBalance(user, getUserTokenBalance(user) - tournament.entryFee);
       user.games += 1;
       tournament.joinedUsers.push(username);
       tournament.status = tournament.joinedUsers.length >= tournament.slots ? "LIVE" : "OPEN";
@@ -1699,6 +1892,7 @@ app.post("/api/tournaments/join", async (req, res) => {
         username,
         type: "tournament_entry",
         amount: -tournament.entryFee,
+        wallet: "token",
         status: "success",
         reference: tournament.id
       });
@@ -1760,11 +1954,11 @@ app.post("/api/games/start", async (req, res) => {
         throw new Error("Finish or leave your current match before starting a new one.");
       }
 
-      if (user.coins < cost) {
-        throw new Error("Not enough balance for this match.");
+      if (getUserTokenBalance(user) < cost) {
+        throw new Error("Not enough tokens for this match.");
       }
 
-      user.coins -= cost;
+      setUserTokenBalance(user, getUserTokenBalance(user) - cost);
       user.games += 1;
       user.favoriteGame = game;
 
@@ -1793,13 +1987,14 @@ app.post("/api/games/start", async (req, res) => {
       data.sessions.unshift(match);
 
       if (cost > 0) {
-        recordTransaction(data, {
-          username,
-          type: `${game}_entry`,
-          amount: -cost,
-          status: "success",
-          reference: match.id
-        });
+      recordTransaction(data, {
+        username,
+        type: `${game}_entry`,
+        amount: -cost,
+        wallet: "token",
+        status: "success",
+        reference: match.id
+      });
       }
 
       return {
@@ -2171,24 +2366,26 @@ app.post("/api/games/finish", async (req, res) => {
 
       if (result === "win") {
         payout = session.payout;
-        user.coins += payout;
+        setUserTokenBalance(user, getUserTokenBalance(user) + payout);
         user.wins += 1;
 
         recordTransaction(data, {
           username,
           type: `${session.game}_win`,
           amount: payout,
+          wallet: "token",
           status: "success",
           reference: session.id
         });
       } else if (result === "draw" && session.cost > 0) {
         payout = session.cost;
-        user.coins += payout;
+        setUserTokenBalance(user, getUserTokenBalance(user) + payout);
 
         recordTransaction(data, {
           username,
           type: `${session.game}_draw_refund`,
           amount: payout,
+          wallet: "token",
           status: "success",
           reference: session.id
         });
@@ -2266,12 +2463,13 @@ app.post("/api/admin/withdraw/:id/reject", async (req, res) => {
 
       const user = getUser(data, withdrawal.username);
       if (user && withdrawal.status !== "approved") {
-        user.coins += withdrawal.amount;
+        setUserCashBalance(user, getUserCashBalance(user) + withdrawal.amount);
 
         recordTransaction(data, {
           username: user.username,
-          type: "withdraw_refund",
+          type: "cash_withdraw_refund",
           amount: withdrawal.amount,
+          wallet: "cash",
           status: "success",
           reference: withdrawal.id
         });

@@ -23,20 +23,23 @@
       <section class="auth-card">
         <span class="eyebrow">Register</span>
         <h2 class="panel-title">Open your account</h2>
-        <p class="panel-copy">Create a profile to unlock the dashboard, wallet, tournaments, and all playable games.</p>
+        <p class="panel-copy">Create a profile to unlock the dashboard, wallet, tournaments, and all eight playable games.</p>
         <p id="registerStatus" class="auth-status" role="status" aria-live="polite" hidden></p>
         <form id="registerForm">
           <div class="field">
             <label for="registerUsername">Username</label>
-            <input id="registerUsername" name="username" autocomplete="username" required>
+            <input id="registerUsername" name="username" autocomplete="username" minlength="3" spellcheck="false" autofocus required>
           </div>
           <div class="field">
             <label for="registerEmail">Email</label>
-            <input id="registerEmail" name="email" type="email" autocomplete="email" required>
+            <input id="registerEmail" name="email" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" required>
           </div>
           <div class="field">
             <label for="registerPassword">Password</label>
-            <input id="registerPassword" name="password" type="password" autocomplete="new-password" required>
+            <div class="password-field">
+              <input id="registerPassword" name="password" type="password" autocomplete="new-password" minlength="4" required>
+              <button class="password-toggle" type="button" data-password-toggle aria-controls="registerPassword" aria-label="Show password">Show</button>
+            </div>
           </div>
           <button class="btn btn-primary" type="submit">Create Account</button>
         </form>

@@ -1732,6 +1732,12 @@ body[data-page="game"] #activeGameCopy {
   font-size: 2rem;
 }
 
+.wallet-balance-note {
+  display: block;
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
 .transaction-list,
 .history-list,
 .leader-list,
@@ -1844,7 +1850,7 @@ body[data-page="game"] #activeGameCopy {
 }
 
 .wallet-highlights {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .dashboard-hero-stats {
@@ -2457,6 +2463,15 @@ body[data-page="game"] #activeGameCopy {
   margin-top: 20px;
 }
 
+.auth-card form .btn {
+  width: 100%;
+  min-height: 56px;
+}
+
+.auth-card .field input {
+  min-height: 56px;
+}
+
 .auth-status {
   margin-top: 18px;
   padding: 14px 16px;
@@ -2506,6 +2521,49 @@ body[data-page="game"] #activeGameCopy {
   border-radius: 30px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field input {
+  padding-right: 88px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f5f8ff;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  background: rgba(99, 226, 255, 0.12);
+  border-color: rgba(99, 226, 255, 0.32);
+}
+
+.password-toggle:focus-visible {
+  outline: none;
 }
 
 .match-layout,
@@ -5484,7 +5542,7 @@ body[data-page="match"] .match-flow-panel .mini-panel strong {
 
 .ludo-player-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -5631,7 +5689,7 @@ body[data-page="match"] .match-flow-panel .mini-panel strong {
   }
 
   .ludo-player-stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .ludo-center-badge {
@@ -5977,8 +6035,8 @@ body[data-page="match"] .panel:has(.ludo-match-layout) {
   border: 0;
   box-shadow: none;
   overflow: visible;
-  perspective: 560px;
-  perspective-origin: 50% 40%;
+  perspective: 430px;
+  perspective-origin: 50% 34%;
 }
 
 .ludo-center-hub.has-many-dice {
@@ -6003,9 +6061,17 @@ body[data-page="match"] .panel:has(.ludo-match-layout) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   justify-items: center;
-  gap: 2px;
-  transform: translateX(-12px);
+  gap: 4px;
+  transform: translateX(-10px);
   z-index: 1;
+}
+
+.ludo-center-dice.is-shared-scene {
+  position: relative;
+  width: 100%;
+  min-height: 46px;
+  display: block;
+  transform: translateX(-5px);
 }
 
 .ludo-center-dice.has-many-dice {
@@ -6020,12 +6086,45 @@ body[data-page="match"] .panel:has(.ludo-match-layout) {
   transform: translateX(-6px);
 }
 
+.ludo-dice-scene {
+  position: absolute;
+  inset: -3px -5px -1px -5px;
+  display: block;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ludo-dice-scene canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  filter: drop-shadow(0 10px 14px rgba(10, 16, 28, 0.18));
+}
+
+.ludo-center-dice-hitboxes {
+  position: relative;
+  z-index: 1;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  justify-items: center;
+  gap: 4px;
+}
+
 .ludo-die-shell {
   --ludo-roll-shift-x: -4px;
   --ludo-roll-start-tilt: -12deg;
+  --ludo-roll-base-x: -24deg;
+  --ludo-roll-base-y: 12deg;
+  --ludo-die-size: 36px;
+  --ludo-die-depth: 9px;
+  --ludo-die-padding: 4px;
+  --ludo-die-gap: 1px;
+  --ludo-die-radius: 10px;
   width: auto;
-  min-width: 50px;
-  min-height: 50px;
+  min-width: 40px;
+  min-height: 40px;
   aspect-ratio: auto;
   padding: 0;
   display: grid;
@@ -6036,7 +6135,8 @@ body[data-page="match"] .panel:has(.ludo-match-layout) {
   box-shadow: none;
   color: inherit;
   overflow: visible;
-  filter: drop-shadow(0 4px 8px rgba(22, 13, 0, 0.14));
+  perspective: 240px;
+  filter: drop-shadow(0 7px 14px rgba(10, 16, 28, 0.16));
   transform-style: preserve-3d;
   transform-origin: 50% 58%;
   will-change: transform, filter;
@@ -6045,16 +6145,28 @@ body[data-page="match"] .panel:has(.ludo-match-layout) {
 .ludo-center-dice .ludo-die-shell:nth-child(2n) {
   --ludo-roll-shift-x: 4px;
   --ludo-roll-start-tilt: 12deg;
+  --ludo-roll-base-x: -22deg;
+  --ludo-roll-base-y: -6deg;
 }
 
 .ludo-center-dice.has-many-dice .ludo-die-shell {
-  min-width: 38px;
-  min-height: 38px;
+  --ludo-die-size: 28px;
+  --ludo-die-depth: 7px;
+  --ludo-die-padding: 3px;
+  --ludo-die-gap: 1px;
+  --ludo-die-radius: 8px;
+  min-width: 32px;
+  min-height: 32px;
 }
 
 .ludo-center-dice.has-stack-dice .ludo-die-shell {
-  min-width: 30px;
-  min-height: 30px;
+  --ludo-die-size: 24px;
+  --ludo-die-depth: 6px;
+  --ludo-die-padding: 3px;
+  --ludo-die-gap: 1px;
+  --ludo-die-radius: 6px;
+  min-width: 28px;
+  min-height: 28px;
 }
 
 button.ludo-die-shell {
@@ -6064,35 +6176,146 @@ button.ludo-die-shell {
   overflow: visible;
 }
 
+div.ludo-die-shell {
+  pointer-events: none;
+}
+
+.ludo-die-shell.is-scene-proxy,
+.ludo-die-shell.is-scene-proxy.is-selected,
+.ludo-die-shell.is-scene-proxy.is-rolling {
+  filter: none;
+  transform: none;
+  perspective: none;
+  transition: opacity 0.2s ease;
+}
+
+.ludo-die-shell.is-scene-proxy::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0);
+  opacity: 0;
+  transition: opacity 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.ludo-die-shell.is-scene-proxy .ludo-die-proxy-core {
+  display: block;
+  width: calc(var(--ludo-die-size) * 1.24);
+  height: calc(var(--ludo-die-size) * 1.18);
+  border-radius: 14px;
+}
+
+.ludo-die-shell.is-scene-proxy.is-selected::before {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 0 0 2px rgba(255, 236, 172, 0.9),
+    0 10px 18px rgba(10, 16, 28, 0.14);
+}
+
+button.ludo-die-shell.is-scene-proxy:hover:not(:disabled)::before,
+button.ludo-die-shell.is-scene-proxy:focus-visible::before {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 0 0 1px rgba(255, 245, 190, 0.72),
+    0 8px 14px rgba(10, 16, 28, 0.1);
+}
+
+.ludo-die-shell.is-scene-proxy.is-dead {
+  opacity: 0.48;
+}
+
 .ludo-die-shell.is-idle {
   opacity: 0.98;
+}
+
+.ludo-die-cube {
+  position: relative;
+  width: var(--ludo-die-size);
+  height: var(--ludo-die-size);
+  display: block;
+  pointer-events: none;
+  transform-origin: 50% 64%;
+  transform-style: preserve-3d;
+  transform:
+    rotateX(var(--ludo-roll-base-x))
+    rotateY(var(--ludo-roll-base-y))
+    rotateZ(var(--ludo-roll-start-tilt));
+  transition: transform 0.22s ease, filter 0.22s ease;
+  will-change: transform;
+}
+
+.ludo-die-viewport {
+  position: relative;
+  width: calc(var(--ludo-die-size) * 1.38);
+  height: calc(var(--ludo-die-size) * 1.38);
+  margin: calc(var(--ludo-die-size) * -0.14) calc(var(--ludo-die-size) * -0.11) calc(var(--ludo-die-size) * -0.1);
+  display: block;
+  pointer-events: none;
+  transform: translateZ(0);
+  overflow: visible;
+}
+
+.ludo-die-viewport canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  filter: drop-shadow(0 7px 10px rgba(10, 16, 28, 0.18));
+}
+
+.ludo-center-dice .ludo-die-shell:nth-child(2n) .ludo-die-cube {
+  transform:
+    rotateX(var(--ludo-roll-base-x))
+    rotateY(var(--ludo-roll-base-y))
+    rotateZ(var(--ludo-roll-start-tilt));
 }
 
 .ludo-die-shell.is-selected {
   transform: translateY(-2px) scale(1.03);
   filter:
-    drop-shadow(0 8px 14px rgba(22, 13, 0, 0.18))
-    drop-shadow(0 0 10px rgba(255, 197, 80, 0.42));
+    drop-shadow(0 10px 18px rgba(10, 16, 28, 0.18))
+    drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+}
+
+.ludo-die-shell.is-selected .ludo-die-cube {
+  transform:
+    rotateX(var(--ludo-roll-base-x))
+    rotateY(var(--ludo-roll-base-y))
+    rotateZ(var(--ludo-roll-start-tilt))
+    scale(1.03);
+}
+
+.ludo-die-shell.is-selected .ludo-die-viewport {
+  transform: translateZ(0) scale(1.03);
+}
+
+.ludo-center-dice .ludo-die-shell.is-selected:nth-child(2n) .ludo-die-cube {
+  transform:
+    rotateX(var(--ludo-roll-base-x))
+    rotateY(var(--ludo-roll-base-y))
+    rotateZ(var(--ludo-roll-start-tilt))
+    scale(1.03);
 }
 
 .ludo-die-shell.is-rolling {
-  animation: ludo-die-roll-tumble 0.48s cubic-bezier(0.38, 0.02, 0.64, 1) infinite;
   filter:
-    drop-shadow(0 12px 16px rgba(22, 13, 0, 0.2))
-    drop-shadow(0 0 8px rgba(255, 205, 110, 0.3));
+    drop-shadow(0 12px 22px rgba(10, 16, 28, 0.2));
+  transition: none;
 }
 
-.ludo-center-dice .ludo-die-shell.is-rolling:nth-child(2n) {
-  animation-duration: 0.54s;
+.ludo-die-shell.is-rolling .ludo-die-cube {
+  transition: none;
+}
+
+.ludo-die-shell.is-rolling .ludo-die-viewport {
+  transition: none;
 }
 
 .ludo-die-shell.is-rolling .ludo-die-face {
-  box-shadow:
-    0 12px 18px rgba(39, 24, 0, 0.18),
-    0 0 14px rgba(255, 221, 143, 0.22),
-    0 1px 0 rgba(255, 255, 255, 0.82) inset,
-    0 4px 0 rgba(255, 255, 255, 0.58) inset,
-    0 -6px 10px rgba(124, 88, 34, 0.12) inset;
+  opacity: 0.98;
 }
 
 .ludo-die-shell.is-used,
@@ -6101,50 +6324,105 @@ button.ludo-die-shell {
 }
 
 .ludo-die-face {
-  width: 42px;
-  height: 42px;
+  position: absolute;
+  inset: 0;
+  width: var(--ludo-die-size);
+  height: var(--ludo-die-size);
+  pointer-events: none;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(3, minmax(0, 1fr));
-  gap: 2px;
-  padding: 5px;
-  position: relative;
-  border-radius: 9px;
-  border: 1px solid rgba(148, 118, 69, 0.22);
+  gap: var(--ludo-die-gap);
+  padding: var(--ludo-die-padding);
+  border-radius: var(--ludo-die-radius);
+  border: 1px solid rgba(17, 24, 39, 0.07);
   background:
-    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0) 38%),
-    linear-gradient(145deg, #fffefb 0%, #f8f2e6 56%, #e4d3b9 100%);
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0) 42%),
+    linear-gradient(160deg, #ffffff 0%, #f7f9fc 55%, #e8edf4 100%);
   box-shadow:
-    0 10px 16px rgba(39, 24, 0, 0.16),
-    0 0 12px rgba(255, 214, 119, 0.18),
+    0 8px 14px rgba(15, 23, 42, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 3px 0 rgba(255, 255, 255, 0.52) inset,
+    0 -7px 11px rgba(91, 104, 126, 0.1) inset;
+  backface-visibility: hidden;
+}
+
+.ludo-die-face.is-front-face {
+  transform: translateZ(calc(var(--ludo-die-depth) / 2));
+}
+
+.ludo-die-face.is-back-face {
+  transform: rotateY(180deg) translateZ(calc(var(--ludo-die-depth) / 2));
+}
+
+.ludo-die-face.is-top-face {
+  transform: rotateX(90deg) translateZ(calc(var(--ludo-die-depth) / 2));
+  background:
+    radial-gradient(circle at 34% 26%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0) 40%),
+    linear-gradient(160deg, #ffffff 0%, #f8fafc 52%, #eef2f7 100%);
+  box-shadow:
+    0 6px 10px rgba(15, 23, 42, 0.1),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 3px 0 rgba(255, 255, 255, 0.5) inset,
+    0 -4px 8px rgba(120, 132, 153, 0.08) inset;
+}
+
+.ludo-die-face.is-bottom-face {
+  transform: rotateX(-90deg) translateZ(calc(var(--ludo-die-depth) / 2));
+  background:
+    radial-gradient(circle at 34% 26%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 40%),
+    linear-gradient(160deg, #f5f7fb 0%, #e8edf4 55%, #dce3ed 100%);
+  box-shadow:
+    0 6px 10px rgba(15, 23, 42, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.78) inset,
+    0 3px 0 rgba(255, 255, 255, 0.44) inset,
+    0 -4px 8px rgba(111, 122, 142, 0.08) inset;
+}
+
+.ludo-die-face.is-right-face {
+  transform: rotateY(90deg) translateZ(calc(var(--ludo-die-depth) / 2));
+  background:
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0) 38%),
+    linear-gradient(160deg, #fbfdff 0%, #eef2f6 50%, #dce4ee 100%);
+  box-shadow:
+    0 6px 10px rgba(15, 23, 42, 0.09),
+    0 1px 0 rgba(255, 255, 255, 0.84) inset,
+    0 3px 0 rgba(255, 255, 255, 0.46) inset,
+    0 -4px 8px rgba(110, 121, 140, 0.08) inset;
+}
+
+.ludo-die-face.is-left-face {
+  transform: rotateY(-90deg) translateZ(calc(var(--ludo-die-depth) / 2));
+  background:
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 38%),
+    linear-gradient(160deg, #f8fbff 0%, #edf1f6 50%, #dbe3ed 100%);
+  box-shadow:
+    0 6px 10px rgba(15, 23, 42, 0.08),
     0 1px 0 rgba(255, 255, 255, 0.82) inset,
-    0 4px 0 rgba(255, 255, 255, 0.58) inset,
-    0 -6px 10px rgba(124, 88, 34, 0.12) inset;
-}
-
-.ludo-center-dice.has-many-dice .ludo-die-face {
-  width: 30px;
-  height: 30px;
-  padding: 4px;
-}
-
-.ludo-center-dice.has-stack-dice .ludo-die-face {
-  width: 24px;
-  height: 24px;
-  padding: 3px;
-  gap: 1px;
-  border-radius: 7px;
+    0 3px 0 rgba(255, 255, 255, 0.44) inset,
+    0 -4px 8px rgba(110, 121, 140, 0.08) inset;
 }
 
 .ludo-die-face::after {
   content: "";
   position: absolute;
   inset: 1px;
-  border-radius: 8px;
+  border-radius: calc(var(--ludo-die-radius) - 2px);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.22) inset,
-    0 -2px 5px rgba(116, 82, 29, 0.08) inset;
+    0 0 0 1px rgba(255, 255, 255, 0.26) inset,
+    0 -2px 5px rgba(93, 107, 128, 0.06) inset;
   pointer-events: none;
+}
+
+.ludo-die-face.is-blank-face {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+.ludo-die-face.is-used-blank-face {
+  background:
+    radial-gradient(circle at 30% 26%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 34%),
+    linear-gradient(145deg, #fff4da 0%, #ead1a3 52%, #c89450 100%);
 }
 
 .ludo-die-face.is-idle-face {
@@ -6216,49 +6494,105 @@ button.ludo-die-shell {
 }
 
 .ludo-die-pip {
-  width: 5px;
-  height: 5px;
+  width: calc(var(--ludo-die-size) * 0.2);
+  height: calc(var(--ludo-die-size) * 0.2);
+  pointer-events: none;
   place-self: center;
   border-radius: 50%;
   opacity: 0;
-  background: radial-gradient(circle at 35% 35%, #50545d 0%, #1a1d22 72%, #0a0b0f 100%);
+  background: radial-gradient(circle at 58% 58%, #0e1217 0%, #090b0f 62%, #040507 100%);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.12) inset,
-    0 1px 2px rgba(0, 0, 0, 0.3);
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 2px 4px rgba(0, 0, 0, 0.22);
 }
 
-.ludo-center-dice.has-many-dice .ludo-die-pip {
-  width: 4px;
-  height: 4px;
+.ludo-die-face.is-top-face .ludo-die-pip {
+  background: radial-gradient(circle at 58% 58%, #0e1217 0%, #090b0f 62%, #040507 100%);
 }
 
-.ludo-center-dice.has-stack-dice .ludo-die-pip {
-  width: 3px;
-  height: 3px;
+.ludo-die-face.is-bottom-face .ludo-die-pip {
+  background: radial-gradient(circle at 58% 58%, #0e1217 0%, #090b0f 62%, #040507 100%);
+}
+
+.ludo-die-face.is-right-face .ludo-die-pip {
+  background: radial-gradient(circle at 58% 58%, #0e1217 0%, #090b0f 62%, #040507 100%);
+}
+
+.ludo-die-face.is-left-face .ludo-die-pip {
+  background: radial-gradient(circle at 58% 58%, #0e1217 0%, #090b0f 62%, #040507 100%);
+}
+
+.ludo-die-face.is-top-face .ludo-die-pip,
+.ludo-die-face.is-bottom-face .ludo-die-pip,
+.ludo-die-face.is-right-face .ludo-die-pip,
+.ludo-die-face.is-left-face .ludo-die-pip {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 1px 3px rgba(0, 0, 0, 0.22);
 }
 
 .ludo-die-pip.is-on {
   opacity: 1;
 }
 
-@keyframes ludo-die-roll-tumble {
+@keyframes ludo-die-roll-drift {
   0% {
-    transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) rotateZ(var(--ludo-roll-start-tilt)) scale(0.97);
+    transform: translate3d(calc(var(--ludo-roll-shift-x) * -0.5), -8px, 0) scale(0.94);
   }
-  18% {
-    transform: translate3d(var(--ludo-roll-shift-x), -5px, 0) rotateX(94deg) rotateY(136deg) rotateZ(calc(var(--ludo-roll-start-tilt) + 68deg)) scale(1.02);
+  20% {
+    transform: translate3d(calc(var(--ludo-roll-shift-x) * 0.5), -2px, 0) scale(1.02);
   }
-  36% {
-    transform: translate3d(calc(var(--ludo-roll-shift-x) * -0.55), 2px, 0) rotateX(178deg) rotateY(278deg) rotateZ(calc(var(--ludo-roll-start-tilt) + 146deg)) scale(0.98);
+  58% {
+    transform: translate3d(calc(var(--ludo-roll-shift-x) * -0.18), 2px, 0) scale(1.01);
   }
-  54% {
-    transform: translate3d(calc(var(--ludo-roll-shift-x) * 0.72), -3px, 0) rotateX(248deg) rotateY(420deg) rotateZ(calc(var(--ludo-roll-start-tilt) + 214deg)) scale(1.03);
-  }
-  72% {
-    transform: translate3d(calc(var(--ludo-roll-shift-x) * -0.35), 1px, 0) rotateX(310deg) rotateY(572deg) rotateZ(calc(var(--ludo-roll-start-tilt) + 292deg)) scale(0.99);
+  82% {
+    transform: translate3d(calc(var(--ludo-roll-shift-x) * 0.1), -1px, 0) scale(0.995);
   }
   100% {
-    transform: translate3d(0, 0, 0) rotateX(360deg) rotateY(720deg) rotateZ(calc(var(--ludo-roll-start-tilt) + 360deg)) scale(0.97);
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes ludo-die-roll-cube {
+  0% {
+    transform:
+      rotateX(var(--ludo-roll-from-x, calc(var(--ludo-roll-base-x) - 720deg)))
+      rotateY(var(--ludo-roll-from-y, calc(var(--ludo-roll-base-y) - 900deg)))
+      rotateZ(var(--ludo-roll-from-z, calc(var(--ludo-roll-start-tilt) - 450deg)))
+      scale(0.92);
+    filter: blur(1.25px) saturate(0.94);
+  }
+  22% {
+    transform:
+      rotateX(calc(var(--ludo-roll-base-x) - 540deg))
+      rotateY(calc(var(--ludo-roll-base-y) - 620deg))
+      rotateZ(calc(var(--ludo-roll-start-tilt) - 290deg))
+      scale(0.98);
+    filter: blur(1px) saturate(0.95);
+  }
+  54% {
+    transform:
+      rotateX(calc(var(--ludo-roll-base-x) - 250deg))
+      rotateY(calc(var(--ludo-roll-base-y) - 280deg))
+      rotateZ(calc(var(--ludo-roll-start-tilt) - 110deg))
+      scale(1.02);
+    filter: blur(0.65px) saturate(0.97);
+  }
+  82% {
+    transform:
+      rotateX(calc(var(--ludo-roll-base-x) + 18deg))
+      rotateY(calc(var(--ludo-roll-base-y) + 12deg))
+      rotateZ(calc(var(--ludo-roll-start-tilt) + 8deg))
+      scale(1.01);
+    filter: blur(0.15px) saturate(1);
+  }
+  100% {
+    transform:
+      rotateX(var(--ludo-roll-base-x))
+      rotateY(var(--ludo-roll-base-y))
+      rotateZ(var(--ludo-roll-start-tilt))
+      scale(1);
+    filter: blur(0) saturate(1);
   }
 }
 
@@ -6439,7 +6773,7 @@ button.ludo-die-shell {
 
 .ludo-player-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -6529,8 +6863,22 @@ button.ludo-die-shell {
   }
 
   .ludo-center-dice {
-    gap: 2px;
-    transform: translateX(-9px);
+    gap: 3px;
+    transform: translateX(-8px);
+  }
+
+  .ludo-center-dice.is-shared-scene {
+    min-height: 52px;
+    transform: translateX(-7px);
+  }
+
+  .ludo-dice-scene {
+    inset: -8px -11px -2px -11px;
+  }
+
+  .ludo-center-dice-hitboxes {
+    min-height: 48px;
+    gap: 5px;
   }
 
   .ludo-center-dice.has-many-dice {
@@ -6546,25 +6894,33 @@ button.ludo-die-shell {
     min-height: 0;
     padding: 0;
     border-radius: 0;
+    --ludo-die-size: 31px;
+    --ludo-die-depth: 9px;
+    --ludo-die-padding: 3px;
+    --ludo-die-gap: 1px;
+    --ludo-die-radius: 8px;
+    min-width: 36px;
+    min-height: 36px;
   }
 
-  .ludo-die-face {
-    width: 36px;
-    height: 36px;
-    padding: 3px;
-    gap: 1px;
+  .ludo-center-dice.has-many-dice .ludo-die-shell {
+    --ludo-die-size: 22px;
+    --ludo-die-depth: 6px;
+    --ludo-die-padding: 3px;
+    --ludo-die-gap: 1px;
+    --ludo-die-radius: 6px;
+    min-width: 28px;
+    min-height: 28px;
   }
 
-  .ludo-center-dice.has-many-dice .ludo-die-face {
-    width: 24px;
-    height: 24px;
-    padding: 3px;
-  }
-
-  .ludo-center-dice.has-stack-dice .ludo-die-face {
-    width: 18px;
-    height: 18px;
-    padding: 2px;
+  .ludo-center-dice.has-stack-dice .ludo-die-shell {
+    --ludo-die-size: 16px;
+    --ludo-die-depth: 5px;
+    --ludo-die-padding: 2px;
+    --ludo-die-gap: 1px;
+    --ludo-die-radius: 5px;
+    min-width: 22px;
+    min-height: 22px;
   }
 
   .ludo-die-idle-text {
@@ -6577,21 +6933,6 @@ button.ludo-die-shell {
 
   .ludo-center-dice.has-stack-dice .ludo-die-idle-text {
     font-size: 4px;
-  }
-
-  .ludo-die-pip {
-    width: 4px;
-    height: 4px;
-  }
-
-  .ludo-center-dice.has-many-dice .ludo-die-pip {
-    width: 3px;
-    height: 3px;
-  }
-
-  .ludo-center-dice.has-stack-dice .ludo-die-pip {
-    width: 2px;
-    height: 2px;
   }
 
   .ludo-roll-button {
@@ -6977,6 +7318,53 @@ button.ludo-die-shell {
     padding-top: 16px;
   }
 
+  .auth-shell {
+    min-height: auto;
+    align-items: start;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .auth-grid {
+    gap: 18px;
+  }
+
+  .auth-grid > .auth-card:not(.auth-art) {
+    order: 1;
+  }
+
+  .auth-grid > .auth-art {
+    order: 2;
+  }
+
+  .auth-card {
+    padding: 22px;
+  }
+
+  .auth-art .hero-title {
+    font-size: clamp(1.9rem, 9vw, 2.55rem) !important;
+    letter-spacing: 0.06em;
+  }
+
+  .auth-art .hero-copy,
+  .auth-card .panel-copy {
+    font-size: 0.96rem;
+  }
+
+  .auth-logo-frame {
+    width: min(280px, 100%);
+    margin-top: 18px;
+    padding: 14px;
+    border-radius: 24px;
+  }
+
+  .password-toggle {
+    right: 10px;
+    min-width: 54px;
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 0.72rem;
+  }
+
   .landing-topbar,
   .app-topbar,
   .nav-bar {
@@ -7310,6 +7698,25 @@ button.ludo-die-shell {
   .phone-panel,
   .result-overlay-card {
     padding: 18px;
+  }
+
+  .auth-card form {
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .auth-art .hero-title {
+    font-size: clamp(1.7rem, 10.6vw, 2.2rem) !important;
+  }
+
+  .auth-logo-frame {
+    width: min(230px, 100%);
+    margin-top: 14px;
+    padding: 12px;
+  }
+
+  .password-field input {
+    padding-right: 76px;
   }
 
   .app-topbar {

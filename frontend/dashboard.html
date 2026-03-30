@@ -28,6 +28,13 @@
       </div>
     </header>
 
+    <section class="dashboard-mobile-lobby-nav" aria-label="Lobby shortcuts">
+      <a class="dashboard-lobby-chip is-current" href="#dashboardGames">All Games</a>
+      <a class="dashboard-lobby-chip" href="match.html?game=ludo">Quick Play</a>
+      <a class="dashboard-lobby-chip" href="tournaments.html">Brackets</a>
+      <a class="dashboard-lobby-chip" href="wallet.html">Cashier</a>
+    </section>
+
     <section class="hero-grid dashboard-grid-shell">
       <div class="hero-panel dashboard-hero-panel">
         <div class="dashboard-panel-body">
@@ -64,8 +71,14 @@
       <div id="dashboardGames" class="game-grid dashboard-games-grid"></div>
     </section>
 
+    <section class="dashboard-detail-switch" aria-label="Dashboard detail views">
+      <button class="dashboard-detail-tab is-current" type="button" data-dashboard-detail-target="activity" aria-pressed="true">Activity</button>
+      <button class="dashboard-detail-tab" type="button" data-dashboard-detail-target="summary" aria-pressed="false">Snapshot</button>
+      <button class="dashboard-detail-tab" type="button" data-dashboard-detail-target="leaders" aria-pressed="false">Leaders</button>
+    </section>
+
     <section class="dashboard-bottom-grid">
-      <section class="panel dashboard-activity-panel">
+      <section class="panel dashboard-activity-panel" data-dashboard-detail-panel="activity">
         <div class="panel-head dashboard-section-head">
           <span class="eyebrow dashboard-tag">Recent activity</span>
           <h2 class="panel-title dashboard-section-title">Wallet and match flow</h2>
@@ -74,7 +87,7 @@
       </section>
 
       <div class="dashboard-side-stack">
-        <section class="panel dashboard-summary-panel">
+        <section class="panel dashboard-summary-panel" data-dashboard-detail-panel="summary">
           <div class="panel-head dashboard-section-head">
             <span class="eyebrow dashboard-tag">This week</span>
             <h2 class="panel-title dashboard-section-title">Performance snapshot</h2>
@@ -83,7 +96,7 @@
           <div id="dashboardSummary" class="dashboard-summary-grid"></div>
         </section>
 
-        <section class="panel dashboard-leader-panel">
+        <section class="panel dashboard-leader-panel" data-dashboard-detail-panel="leaders">
           <div class="panel-head dashboard-section-head">
             <span class="eyebrow dashboard-tag">Top players</span>
             <h2 class="panel-title dashboard-section-title">Leaderboard preview</h2>

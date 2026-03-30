@@ -14,7 +14,10 @@ const GAME_LIBRARY = {
     tagline: "Race board pressure",
     rules: [
       "Roll the two center dice and use each live die once.",
+      "A double six stays as two dice, then grants a fresh reroll after both sixes are spent.",
       "Any die showing 6 opens a home token onto its colored gate square.",
+      "Your own live tokens can stack on the same square and never send each other home.",
+      "Capturing an opponent sends that token home, scores goal, and removes the attacking token from the path.",
       "Get every token around the runway and into the center first to win."
     ]
   },
@@ -150,6 +153,8 @@ const GAME_THEMES = {
 };
 
 const MONEY_FORMAT = new Intl.NumberFormat("en-NG");
+const TOKEN_SYMBOL = "OPT";
+const TOKEN_NAME = "Opticoreplay Token";
 const PRIVATE_MATCH_SYNC_POLL_MS = 900;
 const GAME_ENGINES = {};
 let activeRuntime = null;
@@ -284,6 +289,7 @@ window.addEventListener("pagehide", () => {
 async function initPage() {
   clearSocialRuntime();
   highlightActiveNav();
+  initPasswordToggles();
 
   const page = document.body.dataset.page || "";
   if (page !== "game") {
@@ -295,7 +301,7 @@ async function initPage() {
     user = await requireSession();
     enhanceTopbarProfile(user);
   } else if (user) {
-    setBalanceEverywhere(user.coins);
+    setBalanceEverywhere(user);
   }
 
   attachOpticoreIconEffects();
@@ -321,13 +327,60 @@ async function initPage() {
   }
 }
 
+function initPasswordToggles() {
+  document.querySelectorAll("[data-password-toggle]").forEach((button) => {
+    const targetId = button.getAttribute("aria-controls");
+    const input = targetId ? document.getElementById(targetId) : null;
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const syncToggleState = () => {
+      const showing = input.type === "text";
+      button.textContent = showing ? "Hide" : "Show";
+      button.setAttribute("aria-label", showing ? "Hide password" : "Show password");
+      button.setAttribute("aria-pressed", showing ? "true" : "false");
+    };
+
+    syncToggleState();
+
+    button.addEventListener("click", () => {
+      input.type = input.type === "password" ? "text" : "password";
+      syncToggleState();
+      input.focus({ preventScroll: true });
+      const end = input.value.length;
+      input.setSelectionRange(end, end);
+    });
+  });
+}
+
+function validateRegisterPayload(payload) {
+  const username = String(payload.username || "").trim();
+  const email = String(payload.email || "").trim();
+  const password = String(payload.password || "");
+
+  if (username.length < 3) {
+    return "Username must be at least 3 characters.";
+  }
+
+  if (!email.includes("@")) {
+    return "Enter a valid email address.";
+  }
+
+  if (password.length < 4) {
+    return "Password must be at least 4 characters.";
+  }
+
+  return "";
+}
+
 function getStoredUser() {
   return readStorage(STORAGE_KEYS.user);
 }
 
 function setStoredUser(user) {
   writeStorage(STORAGE_KEYS.user, user);
-  setBalanceEverywhere(user.coins);
+  setBalanceEverywhere(user);
 }
 
 function clearStoredUser() {
@@ -611,6 +664,111 @@ function money(value) {
 function signedMoney(value) {
   const amount = Number(value || 0);
   return amount > 0 ? `+${money(amount)}` : money(amount);
+}
+
+function tokenAmount(value) {
+  const amount = Number(value || 0);
+  const sign = amount < 0 ? "-" : "";
+  return `${sign}${MONEY_FORMAT.format(Math.abs(Math.round(amount)))} ${TOKEN_SYMBOL}`;
+}
+
+function signedTokenAmount(value) {
+  const amount = Number(value || 0);
+  return amount > 0 ? `+${tokenAmount(amount)}` : tokenAmount(amount);
+}
+
+function getTokenBalance(account) {
+  if (account && account.tokenBalance !== undefined && account.tokenBalance !== null) {
+    return Number(account.tokenBalance || 0);
+  }
+  return Number(account?.coins || 0);
+}
+
+function getCashBalance(account) {
+  return Number(account?.cashBalance || 0);
+}
+
+function competitionStatusCopy(account) {
+  if (getTokenBalance(account) >= 500) {
+    return "Ranked ready";
+  }
+  return getCashBalance(account) > 0 ? `Buy ${TOKEN_SYMBOL} to rank` : "Fund cash wallet";
+}
+
+function nextWalletAction(account) {
+  if (getTokenBalance(account) >= 500) {
+    return {
+      value: "Queue a ranked match",
+      copy: `Your ${TOKEN_SYMBOL} wallet is ready for ranked queues and tournament brackets.`
+    };
+  }
+
+  if (getCashBalance(account) > 0) {
+    return {
+      value: `Buy more ${TOKEN_SYMBOL}`,
+      copy: `Convert some of your cash wallet into ${TOKEN_SYMBOL} before you queue again.`
+    };
+  }
+
+  return {
+    value: "Fund your cash wallet",
+    copy: `Add cash first, then convert it into playable ${TOKEN_SYMBOL} when you are ready to queue.`
+  };
+}
+
+function normalizeWalletKind(value) {
+  return String(value || "").trim().toLowerCase() === "cash" ? "cash" : "token";
+}
+
+function inferTransactionWallet(itemOrType, maybeWallet) {
+  const type = typeof itemOrType === "object" && itemOrType
+    ? String(itemOrType.type || "")
+    : String(itemOrType || "");
+  const wallet = typeof itemOrType === "object" && itemOrType
+    ? itemOrType.wallet
+    : maybeWallet;
+  const normalizedWallet = String(wallet || "").trim().toLowerCase();
+
+  if (normalizedWallet === "cash" || normalizedWallet === "token") {
+    return normalizedWallet;
+  }
+
+  const normalizedType = type.toLowerCase();
+  if (normalizedType.includes("deposit") || normalizedType.includes("withdraw")) {
+    return "cash";
+  }
+
+  return "token";
+}
+
+function transactionCashDelta(item) {
+  if (item && item.cashAmount !== undefined && item.cashAmount !== null && item.cashAmount !== "") {
+    return Number(item.cashAmount || 0);
+  }
+  return inferTransactionWallet(item) === "cash" ? Number(item?.amount || 0) : 0;
+}
+
+function transactionTokenDelta(item) {
+  return inferTransactionWallet(item) === "token" ? Number(item?.amount || 0) : 0;
+}
+
+function formatWalletAmount(value, wallet) {
+  return normalizeWalletKind(wallet) === "cash" ? money(value) : tokenAmount(value);
+}
+
+function transactionDetailCopy(item) {
+  const normalized = String(item?.type || "").toLowerCase();
+  const wallet = inferTransactionWallet(item);
+  const cashDelta = transactionCashDelta(item);
+
+  if (normalized.includes("purchase")) {
+    return `Paid ${money(Math.abs(cashDelta))} from the cash wallet at a 1:1 rate.`;
+  }
+  if (normalized.includes("sale")) {
+    return `Converted ${TOKEN_SYMBOL} into ${money(Math.abs(cashDelta))} cash at a 1:1 rate.`;
+  }
+
+  return `${String(item?.type || "wallet").replace(/_/g, " ")} - ${wallet === "cash" ? "Cash wallet" : `${TOKEN_SYMBOL} wallet`}`;
 }
 
 function escapeHtml(value) {
@@ -943,27 +1101,39 @@ function resultTone(result) {
   return "neutral";
 }
 
-function transactionMeta(type) {
+function transactionMeta(type, wallet = "token") {
   const normalized = String(type || "").toLowerCase();
 
+  if (normalized.includes("purchase")) {
+    return { label: `Buy ${TOKEN_SYMBOL}`, icon: "deposit" };
+  }
+  if (normalized.includes("sale")) {
+    return { label: `Sell ${TOKEN_SYMBOL}`, icon: "withdraw" };
+  }
   if (normalized.includes("deposit")) {
-    return { label: "Deposit", icon: "deposit" };
+    return { label: "Cash deposit", icon: "deposit" };
+  }
+  if (normalized.includes("refund")) {
+    return { label: normalized.includes("withdraw") ? "Cash refund" : `${TOKEN_SYMBOL} refund`, icon: "spark" };
   }
   if (normalized.includes("withdraw")) {
-    return { label: "Withdrawal", icon: "withdraw" };
+    return { label: "Cash withdrawal", icon: "withdraw" };
   }
   if (normalized.includes("tournament")) {
-    return { label: "Tournament", icon: "trophy" };
+    return { label: "Tournament entry", icon: "trophy" };
   }
   if (normalized.includes("payout") || normalized.includes("win")) {
-    return { label: "Payout", icon: "spark" };
+    return { label: `${TOKEN_SYMBOL} payout`, icon: "spark" };
   }
-  if (normalized.includes("match")) {
-    return { label: "Match", icon: "spark" };
+  if (normalized.includes("welcome")) {
+    return { label: `Starter ${TOKEN_SYMBOL}`, icon: "spark" };
+  }
+  if (normalized.includes("entry") || normalized.includes("match")) {
+    return { label: "Match entry", icon: "spark" };
   }
 
   return {
-    label: capitalize(normalized.replace(/_/g, " ")) || "Wallet",
+    label: normalizeWalletKind(wallet) === "cash" ? "Cash wallet" : `${TOKEN_SYMBOL} wallet`,
     icon: "wallet"
   };
 }
@@ -1202,9 +1372,12 @@ function attachOpticoreIconEffects() {
   });
 }
 
-function setBalanceEverywhere(amount) {
+function setBalanceEverywhere(amountOrUser) {
+  const amount = typeof amountOrUser === "object" && amountOrUser
+    ? getTokenBalance(amountOrUser)
+    : Number(amountOrUser || 0);
   document.querySelectorAll("[data-balance]").forEach((node) => {
-    node.textContent = money(amount);
+    node.textContent = tokenAmount(amount);
     node.classList.remove("dashboard-balance-loading");
     node.removeAttribute("aria-busy");
   });
@@ -1223,8 +1396,10 @@ function renderDashboardHeadline(user) {
     return;
   }
 
-  const username = escapeHtml(user && user.username ? user.username : "Player");
+  const rawUsername = user && user.username ? user.username : "Player";
+  const username = escapeHtml(rawUsername.length > 14 ? `${rawUsername.slice(0, 13)}...` : rawUsername);
   node.innerHTML = `<span class="dashboard-headline-user">${username}</span>, <span class="dashboard-headline-accent">Ready</span><br>for the next<br>win?`;
+  node.setAttribute("aria-label", `${rawUsername}, Ready for the next win?`);
 }
 
 function renderInfoList(targetId, items, emptyMessage) {
@@ -1406,6 +1581,18 @@ async function initRegister(user) {
     event.preventDefault();
     const formData = new FormData(form);
     const submitButton = form.querySelector('button[type="submit"]');
+    const payload = {
+      username: String(formData.get("username") || "").trim(),
+      email: String(formData.get("email") || "").trim(),
+      password: String(formData.get("password") || "")
+    };
+    const validationMessage = validateRegisterPayload(payload);
+
+    if (validationMessage) {
+      setAuthStatus("registerStatus", validationMessage, "error");
+      return;
+    }
+
     const serverAvailable = await checkAuthServerStatus("registerStatus");
 
     if (!serverAvailable) {
@@ -1419,11 +1606,7 @@ async function initRegister(user) {
     try {
       const account = await apiRequest("/register", {
         method: "POST",
-        body: {
-          username: formData.get("username"),
-          email: formData.get("email"),
-          password: formData.get("password")
-        }
+        body: payload
       });
 
       setAuthStatus("registerStatus", "");
@@ -1486,12 +1669,12 @@ function renderLandingHeroStats() {
     {
       label: "Match modes",
       value: "Ranked + Practice",
-      copy: "Warm up for free or stake into wallet-backed competition."
+      copy: `Warm up for free or stake into ${TOKEN_SYMBOL}-based competition.`
     },
     {
       label: "Wallet loop",
-      value: "Deposit to payout",
-      copy: "Entries, wins, withdrawals, and history stay connected."
+      value: `Cash to ${TOKEN_SYMBOL}`,
+      copy: `Fund cash, buy ${TOKEN_SYMBOL}, withdraw cash, and keep the full history connected.`
     },
     {
       label: "Competitive edge",
@@ -1551,15 +1734,15 @@ function renderLandingTournamentCard() {
           <strong>Daily Ludo Rush</strong>
         </div>
       </div>
-      <p class="panel-copy">Fast-entry bracket with leaderboard lift and wallet-backed prize pressure.</p>
+      <p class="panel-copy">Fast-entry bracket with leaderboard lift and ${TOKEN_SYMBOL}-backed prize pressure.</p>
       <div class="landing-float-kpis">
         <div class="spot-pill">
           <small>Entry</small>
-          <strong>${money(500)}</strong>
+          <strong>${tokenAmount(500)}</strong>
         </div>
         <div class="spot-pill">
           <small>Prize</small>
-          <strong>${money(10000)}</strong>
+          <strong>${tokenAmount(10000)}</strong>
         </div>
       </div>
       <div class="row-between">
@@ -1580,7 +1763,7 @@ function renderLandingQuickPicks() {
     {
       icon: "wallet",
       title: "Wallet center",
-      copy: "Deposit, withdraw, and follow every entry fee and reward.",
+      copy: `Fund cash, buy or sell ${TOKEN_SYMBOL}, and follow every entry fee and reward.`,
       href: "wallet.html"
     },
     {
@@ -1592,7 +1775,7 @@ function renderLandingQuickPicks() {
     {
       icon: "chart",
       title: "Leaderboard",
-      copy: "See top balances, win counts, and competitive momentum at a glance.",
+      copy: `See top ${TOKEN_SYMBOL} stacks, win counts, and competitive momentum at a glance.`,
       href: "leaderboard.html"
     },
     {
@@ -1628,13 +1811,13 @@ function renderLandingFeatureGrid() {
     {
       icon: "deposit",
       label: "Wallet and history",
-      title: "Track every deposit, entry fee, win, and withdrawal request in one place.",
-      copy: "The money flow feels like part of the game product instead of a separate tool."
+      title: `Track every cash deposit, ${TOKEN_SYMBOL} exchange, entry fee, win, and withdrawal request in one place.`,
+      copy: "The wallet flow feels like part of the game product instead of a separate tool."
     },
     {
       icon: "spark",
       label: "Ranked and practice",
-      title: "Switch between zero-risk warmups and competitive rounds with real stakes.",
+      title: `Switch between zero-risk warmups and competitive rounds with real ${TOKEN_SYMBOL} stakes.`,
       copy: "Practice keeps players sharp while ranked play keeps the product exciting."
     },
     {
@@ -1667,21 +1850,23 @@ function renderDashboardHeroStats(user, activeSessions) {
 
   const favoriteKey = user.favoriteGame || "ludo";
   const favoriteGame = gameData(favoriteKey);
+  const tokenBalance = getTokenBalance(user);
+  const statusCopy = competitionStatusCopy(user);
   target.classList.add("dashboard-hero-stats");
   target.innerHTML = `
     <a class="balance-hero-card" href="wallet.html">
       <div class="balance-hero-copy">
         <span class="eyebrow">Playable balance</span>
-        <strong>${money(user.coins)}</strong>
-        <p>Jump straight into ranked matches, tournament brackets, and wallet actions without leaving the same flow.</p>
+        <strong>${tokenAmount(tokenBalance)}</strong>
+        <p>Jump straight into ranked matches, tournament brackets, and ${TOKEN_SYMBOL} wallet actions without leaving the same flow.</p>
         <div class="balance-hero-tags">
-          <span class="tag-pill">${user.coins >= 500 ? "Ranked ready" : "Top up to rank"}</span>
+          <span class="tag-pill">${statusCopy}</span>
           <span class="tag-pill">${activeSessions} live arenas</span>
         </div>
       </div>
       <div class="balance-hero-orb">
-        <small>Wallet</small>
-        <strong>${money(user.coins)}</strong>
+        <small>${TOKEN_SYMBOL}</small>
+        <strong>${tokenAmount(tokenBalance)}</strong>
       </div>
     </a>
     <div class="spotlight-stat">
@@ -1711,15 +1896,15 @@ function renderDashboardQuickStrip(user, tournaments) {
   const favoriteGame = gameData(favoriteKey);
   const featuredTournament = (tournaments || [])[0];
   const tournamentCopy = featuredTournament
-    ? `${money(featuredTournament.entryFee)} entry`
+    ? `${tokenAmount(featuredTournament.entryFee)} entry`
     : "Brackets open";
 
   target.innerHTML = `
     <a class="quick-entry-card" href="wallet.html">
       ${appIconFrame("wallet", "quick-entry-icon")}
       <div class="quick-entry-copy">
-        <strong>${money(user.coins)}</strong>
-        <span>Wallet ready for your next move.</span>
+        <strong>${tokenAmount(getTokenBalance(user))}</strong>
+        <span>${TOKEN_SYMBOL} wallet ready for your next move.</span>
       </div>
     </a>
     <a class="quick-entry-card theme-surface" style="${gameThemeStyle(favoriteKey)}" href="match.html?game=${encodeURIComponent(favoriteKey)}">
@@ -1740,7 +1925,7 @@ function renderDashboardQuickStrip(user, tournaments) {
       ${appIconFrame("chart", "quick-entry-icon")}
       <div class="quick-entry-copy">
         <strong>Leaderboard</strong>
-        <span>Check the richest and most active players.</span>
+        <span>Check the biggest ${TOKEN_SYMBOL} stacks and most active players.</span>
       </div>
     </a>
   `;
@@ -1765,8 +1950,8 @@ function leaderboardCardMarkup(player, index) {
         <div class="panel-copy">Wins ${wins} - Games ${games} - Win rate ${escapeHtml(winRate)}</div>
       </div>
       <div class="leader-score-block">
-        <small>Wallet</small>
-        <strong>${money(player.coins)}</strong>
+        <small>${TOKEN_SYMBOL}</small>
+        <strong>${tokenAmount(getTokenBalance(player))}</strong>
       </div>
     </div>
   `;
@@ -1808,9 +1993,9 @@ function renderDashboardSummary(user, transactions, history, tournaments) {
   const weekWinRate = recentHistory.length
     ? `${Math.round((wins / recentHistory.length) * 100)}%`
     : `${Math.round(((Number(user.wins || 0) || 0) / Math.max(Number(user.games || 0) || 0, 1)) * 100)}%`;
-  const tournamentCashIns = recentTransactions.reduce((total, item) => {
+  const tokenWinnings = recentTransactions.reduce((total, item) => {
     const type = String(item.type || "").toLowerCase();
-    const amount = Number(item.amount || 0);
+    const amount = transactionTokenDelta(item);
     if (amount <= 0) {
       return total;
     }
@@ -1819,7 +2004,7 @@ function renderDashboardSummary(user, transactions, history, tournaments) {
     }
     return total;
   }, 0);
-  const walletNetFlow = recentTransactions.reduce((total, item) => total + Number(item.amount || 0), 0);
+  const cashNetFlow = recentTransactions.reduce((total, item) => total + transactionCashDelta(item), 0);
   const liveTournamentCount = (tournaments || []).filter((item) => !item.completed).length;
 
   const items = [
@@ -1832,14 +2017,14 @@ function renderDashboardSummary(user, transactions, history, tournaments) {
       value: weekWinRate
     },
     {
-      label: "Tournament cash-ins",
-      value: tournamentCashIns ? signedMoney(tournamentCashIns) : money(0),
-      tone: tournamentCashIns > 0 ? "positive" : "neutral"
+      label: `${TOKEN_SYMBOL} winnings`,
+      value: tokenWinnings ? signedTokenAmount(tokenWinnings) : tokenAmount(0),
+      tone: tokenWinnings > 0 ? "positive" : "neutral"
     },
     {
-      label: "Wallet net flow",
-      value: signedMoney(walletNetFlow),
-      tone: amountTone(walletNetFlow)
+      label: "Cash flow",
+      value: signedMoney(cashNetFlow),
+      tone: amountTone(cashNetFlow)
     }
   ];
 
@@ -1873,16 +2058,17 @@ function renderDashboardActivity(transactions, history) {
   }
 
   const transactionItems = (transactions || []).map((item) => {
-    const meta = transactionMeta(item.type);
+    const wallet = inferTransactionWallet(item);
+    const meta = transactionMeta(item.type, wallet);
     return {
       title: meta.label,
-      detail: item.type.replace(/_/g, " "),
-      amount: money(item.amount),
+      detail: transactionDetailCopy(item),
+      amount: formatWalletAmount(item.amount, wallet),
       amountClass: amountTone(item.amount),
       stamp: formatDateTime(item.createdAt),
       createdAt: item.createdAt,
       iconMarkup: appIconFrame(meta.icon, "activity-icon"),
-      label: "Wallet"
+      label: wallet === "cash" ? "Cash" : TOKEN_SYMBOL
     };
   });
 
@@ -1891,7 +2077,7 @@ function renderDashboardActivity(transactions, history) {
     return {
       title: gameData(item.game).name,
       detail: `${capitalize(item.mode)} - ${capitalize(item.result)}`,
-      amount: item.mode === "practice" && !item.payout && !item.cost ? "Free" : money(net),
+      amount: item.mode === "practice" && !item.payout && !item.cost ? "Free" : tokenAmount(net),
       amountClass: resultTone(item.result),
       stamp: formatDateTime(item.createdAt),
       createdAt: item.createdAt,
@@ -1963,13 +2149,13 @@ function renderFeaturedTournament(tournaments, user) {
         </div>
         <div class="tournament-pot">
           <small>Prize pool</small>
-          <strong>${money(tournament.prize)}</strong>
+          <strong>${tokenAmount(tournament.prize)}</strong>
         </div>
       </div>
       <div class="tournament-highlight-row">
         <div class="spot-pill">
           <small>Entry</small>
-          <strong>${money(tournament.entryFee)}</strong>
+          <strong>${tokenAmount(tournament.entryFee)}</strong>
         </div>
         <div class="spot-pill">
           <small>Slots</small>
@@ -2042,14 +2228,14 @@ async function initMatchSetup(user) {
   };
 
   applyGameTheme(game.key);
-  setBalanceEverywhere(user.coins);
+  setBalanceEverywhere(user);
   setPageTitle("matchGameTitle", `${game.name} Match`);
-  setPageTitle("matchGameCopy", game.key === "ludo" ? "Choose the table size, color homes, and stake before the race starts." : game.tagline);
+  setPageTitle("matchGameCopy", game.key === "ludo" ? `Choose the table size, color homes, and ${TOKEN_SYMBOL} stake before the race starts.` : game.tagline);
   setGameBadge("matchGameBadge", game.key);
 
   const feeChoices = [100, 500, 1000, 2500];
   const modes = [
-    { key: "ranked", label: "Ranked", note: "Entry fee deducted, payout on win." },
+    { key: "ranked", label: "Ranked", note: `${TOKEN_SYMBOL} entry fee deducted, payout lands in ${TOKEN_SYMBOL}.` },
     { key: "practice", label: "Practice", note: "Free round with no wallet impact." }
   ];
   const ludoSeatChoices = [
@@ -2583,8 +2769,8 @@ function renderMatchSummary(game, state) {
     </div>
     <div class="mini-panel match-summary-stat-card">
       <small>${state.mode === "practice" ? "Practice value" : "Entry and reward"}</small>
-      <strong>${money(entryFee)}</strong>
-      <p class="panel-copy">Potential win ${money(payout)}</p>
+      <strong>${state.mode === "practice" ? "Free" : tokenAmount(entryFee)}</strong>
+      <p class="panel-copy">${state.mode === "practice" ? `No ${TOKEN_SYMBOL} payout in practice mode.` : `Potential win ${tokenAmount(payout)}`}</p>
     </div>
     ${ludoSetup ? `
       <div class="mini-panel match-summary-stat-card">
@@ -2608,7 +2794,9 @@ async function initWallet(user) {
   ]);
 
   setStoredUser(account);
-  setPageTitle("walletBalance", money(account.coins));
+  setBalanceEverywhere(account);
+  setPageTitle("walletBalance", tokenAmount(getTokenBalance(account)));
+  setPageTitle("walletCashBalance", `Cash wallet ${money(getCashBalance(account))}`);
   renderWalletHighlights(account, transactions, withdrawals);
   renderTransactions(transactions, "walletTransactions", "No wallet activity yet.");
   renderWithdrawals(withdrawals, "withdrawHistory");
@@ -2619,6 +2807,46 @@ async function initWallet(user) {
 
     try {
       const updated = await apiRequest("/wallet/deposit", {
+        method: "POST",
+        body: {
+          username: account.username,
+          amount
+        }
+      });
+
+      setStoredUser(updated);
+      window.location.reload();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  document.getElementById("buyTokensForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const amount = Number(new FormData(event.currentTarget).get("amount"));
+
+    try {
+      const updated = await apiRequest("/wallet/buy-tokens", {
+        method: "POST",
+        body: {
+          username: account.username,
+          amount
+        }
+      });
+
+      setStoredUser(updated);
+      window.location.reload();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+
+  document.getElementById("sellTokensForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const amount = Number(new FormData(event.currentTarget).get("amount"));
+
+    try {
+      const updated = await apiRequest("/wallet/sell-tokens", {
         method: "POST",
         body: {
           username: account.username,
@@ -2663,28 +2891,36 @@ function renderWalletHighlights(account, transactions, withdrawals) {
     return;
   }
 
-  const inflow = (transactions || []).reduce((sum, item) => {
-    return item.amount > 0 ? sum + Number(item.amount) : sum;
+  const cashFlow = (transactions || []).reduce((sum, item) => {
+    return sum + transactionCashDelta(item);
   }, 0);
-  const outflow = (transactions || []).reduce((sum, item) => {
-    return item.amount < 0 ? sum + Math.abs(Number(item.amount)) : sum;
+  const tokenFlow = (transactions || []).reduce((sum, item) => {
+    return sum + transactionTokenDelta(item);
   }, 0);
   const pending = (withdrawals || []).filter((item) => String(item.status || "").toLowerCase() === "pending").length;
+  const pendingAmount = (withdrawals || []).reduce((sum, item) => {
+    return String(item.status || "").toLowerCase() === "pending" ? sum + Number(item.amount || 0) : sum;
+  }, 0);
 
   target.innerHTML = `
     <div class="wallet-highlight-card">
-      <small>Wallet</small>
-      <strong>${money(account.coins)}</strong>
-      <p class="panel-copy">Current playable balance.</p>
+      <small>Cash wallet</small>
+      <strong>${money(getCashBalance(account))}</strong>
+      <p class="panel-copy">Use cash to fund the wallet and process withdrawals.</p>
     </div>
     <div class="wallet-highlight-card">
-      <small>Total inflow</small>
-      <strong>${money(inflow)}</strong>
-      <p class="panel-copy">Deposits, wins, and credits received.</p>
+      <small>${TOKEN_SYMBOL} flow</small>
+      <strong>${signedTokenAmount(tokenFlow)}</strong>
+      <p class="panel-copy">Ranked entries, wins, and exchange moves this account has processed.</p>
     </div>
     <div class="wallet-highlight-card">
-      <small>Outflow</small>
-      <strong>${money(outflow)}</strong>
+      <small>Cash flow</small>
+      <strong>${signedMoney(cashFlow)}</strong>
+      <p class="panel-copy">Deposits, ${TOKEN_SYMBOL} sales, and withdrawal activity.</p>
+    </div>
+    <div class="wallet-highlight-card">
+      <small>Open cash-outs</small>
+      <strong>${money(pendingAmount)}</strong>
       <p class="panel-copy">${pending} pending withdrawal request${pending === 1 ? "" : "s"}.</p>
     </div>
   `;
@@ -2703,7 +2939,8 @@ function renderTransactions(transactions, targetId, emptyMessage) {
 
   target.innerHTML = transactions
     .map((item) => {
-      const meta = transactionMeta(item.type);
+      const wallet = inferTransactionWallet(item);
+      const meta = transactionMeta(item.type, wallet);
       const tone = amountTone(item.amount);
       return `
         <div class="wallet-activity-card ${escapeHtml(tone)}">
@@ -2711,9 +2948,9 @@ function renderTransactions(transactions, targetId, emptyMessage) {
           <div class="wallet-row-copy">
             <div class="wallet-row-top">
               <strong>${escapeHtml(meta.label)}</strong>
-              <span class="activity-amount ${escapeHtml(tone)}">${money(item.amount)}</span>
+              <span class="activity-amount ${escapeHtml(tone)}">${formatWalletAmount(item.amount, wallet)}</span>
             </div>
-            <div class="panel-copy">${escapeHtml(item.type.replace(/_/g, " "))}</div>
+            <div class="panel-copy">${escapeHtml(transactionDetailCopy(item))}</div>
             <div class="activity-time">${escapeHtml(formatDateTime(item.createdAt))}</div>
           </div>
         </div>
@@ -2765,7 +3002,7 @@ async function initLeaderboard(user) {
     "leaderboardStats",
     [
       { label: "Players", value: String(leaderboard.length), copy: "Profiles in the current local ladder." },
-      { label: "Top wallet", value: richest ? money(richest.coins) : money(0), copy: richest ? richest.username : "No player yet." },
+      { label: `Top ${TOKEN_SYMBOL}`, value: richest ? tokenAmount(getTokenBalance(richest)) : tokenAmount(0), copy: richest ? richest.username : "No player yet." },
       { label: "Total wins", value: String(totalWins), copy: "All recorded wins across stored accounts." }
     ],
     "No leaderboard stats yet."
@@ -2785,6 +3022,7 @@ async function initProfile(user) {
     const winRate = account.games ? `${Math.round((account.wins / account.games) * 100)}%` : "0%";
     const favoriteKey = account.favoriteGame || "ludo";
     const favoriteGame = gameData(favoriteKey);
+    const walletStatus = competitionStatusCopy(account);
     profileCard.innerHTML = `
       <div class="profile-showcase theme-surface" style="${gameThemeStyle(favoriteKey)}">
         <div class="profile-showcase-head">
@@ -2794,12 +3032,16 @@ async function initProfile(user) {
             <h3>${escapeHtml(account.username)}</h3>
             <p>${escapeHtml(account.email)}</p>
           </div>
-          <span class="status-chip">${account.coins >= 500 ? "Ranked ready" : "Fund to rank"}</span>
+          <span class="status-chip">${walletStatus}</span>
         </div>
         <div class="profile-highlight-grid">
           <div class="profile-highlight-card">
-            <small>Wallet</small>
-            <strong>${money(account.coins)}</strong>
+            <small>${TOKEN_SYMBOL}</small>
+            <strong>${tokenAmount(getTokenBalance(account))}</strong>
+          </div>
+          <div class="profile-highlight-card">
+            <small>Cash wallet</small>
+            <strong>${money(getCashBalance(account))}</strong>
           </div>
           <div class="profile-highlight-card">
             <small>Wins</small>
@@ -2831,8 +3073,8 @@ async function initProfile(user) {
       },
       {
         label: "Next move",
-        value: account.coins < 500 ? "Fund your wallet" : "Queue a ranked match",
-        copy: account.coins < 500 ? "Add balance so you can keep entering ranked and tournament rounds." : "You have enough balance to keep climbing."
+        value: nextWalletAction(account).value,
+        copy: nextWalletAction(account).copy
       },
       {
         label: "Practice note",
@@ -2874,7 +3116,7 @@ function renderHistory(history, targetId) {
           </div>
           <div class="history-meta-row">
             <span class="tag-pill">${escapeHtml(capitalize(item.mode))} mode</span>
-            <span class="activity-amount ${escapeHtml(amountTone(net))}">${item.mode === "practice" && !item.payout && !item.cost ? "Free" : money(net)}</span>
+            <span class="activity-amount ${escapeHtml(amountTone(net))}">${item.mode === "practice" && !item.payout && !item.cost ? "Free" : tokenAmount(net)}</span>
           </div>
           <div class="activity-time">${escapeHtml(formatDateTime(item.createdAt))}</div>
         </div>
@@ -2991,7 +3233,7 @@ function renderDiscoverPlayers(players) {
                     <div class="panel-copy">${escapeHtml(socialPresenceCopy(player))}</div>
                   </div>
                 </div>
-                <span class="leader-chip">${money(player.coins)}</span>
+                <span class="leader-chip">${tokenAmount(getTokenBalance(player))}</span>
               </div>
               <div class="social-card-foot">
                 <span class="panel-copy">${escapeHtml(gameData(player.favoriteGame).name)} specialist</span>
@@ -3421,11 +3663,11 @@ async function initTournaments(user) {
           <div class="tournament-kpis">
             <div class="spot-pill">
               <small>Entry</small>
-              <strong>${money(tournament.entryFee)}</strong>
+              <strong>${tokenAmount(tournament.entryFee)}</strong>
             </div>
             <div class="spot-pill">
               <small>Prize</small>
-              <strong>${money(tournament.prize)}</strong>
+              <strong>${tokenAmount(tournament.prize)}</strong>
             </div>
             <div class="spot-pill">
               <small>Slots</small>
@@ -3480,7 +3722,7 @@ function renderAdminUsers(users) {
             <strong>${escapeHtml(user.username)}</strong>
             <div class="panel-copy">${escapeHtml(user.email)}</div>
           </div>
-          <div class="leader-score">${money(user.coins)}</div>
+          <div class="leader-score">${tokenAmount(getTokenBalance(user))}</div>
         </div>
       `;
     })
@@ -3562,6 +3804,8 @@ async function initGamePage(user) {
     ludoRollAudio: null,
     ludoRollIntervalId: null,
     ludoRollTimeoutId: null,
+    ludoRollAnimationFrameId: null,
+    ludoRollAnimations: [],
     ludoMoveAnimation: null,
     ludoMoveStepTimeoutId: null,
     ludoMoveFinishTimeoutId: null,
@@ -3654,14 +3898,40 @@ async function initGamePage(user) {
   }
 }
 
+let ludoThreeDiceReadyListenerBound = false;
+
+function destroyLudoThreeDice(root = document) {
+  if (window.OpticoreLudoDice3D && typeof window.OpticoreLudoDice3D.destroy === "function") {
+    window.OpticoreLudoDice3D.destroy(root);
+  }
+}
+
+function syncLudoThreeDice(root = document) {
+  if (window.OpticoreLudoDice3D && typeof window.OpticoreLudoDice3D.sync === "function") {
+    window.OpticoreLudoDice3D.sync(root);
+    return;
+  }
+
+  if (!ludoThreeDiceReadyListenerBound) {
+    ludoThreeDiceReadyListenerBound = true;
+    window.addEventListener("opticore:ludo-dice-ready", () => {
+      ludoThreeDiceReadyListenerBound = false;
+      if (document.body?.dataset?.page === "game") {
+        window.OpticoreLudoDice3D?.sync(document);
+      }
+    }, { once: true });
+  }
+}
+
 function renderActiveGame() {
   if (!activeRuntime) {
+    destroyLudoThreeDice();
     stopWhotBackgroundMusic(true);
     return;
   }
 
   clearWhotDragState();
-  setBalanceEverywhere(activeRuntime.user.coins);
+  setBalanceEverywhere(activeRuntime.user);
   document.body.dataset.matchGame = activeRuntime.match.game;
   document.body.classList.toggle("game-focus-whot", activeRuntime.match.game === "whot");
   const engine = GAME_ENGINES[activeRuntime.match.game];
@@ -3669,7 +3939,7 @@ function renderActiveGame() {
   const isPrivateMatch = activeRuntime.match.queueType === "private" || activeRuntime.match.mode === "private";
   const opponentName = activeRuntime.match.opponentName || activeRuntime.match.guestUsername || activeRuntime.match.hostUsername || "Player";
   const modeLabel = isPrivateMatch ? "Private" : activeRuntime.match.mode === "practice" ? "Practice" : "Ranked";
-  const stakeLabel = isPrivateMatch ? `Match ID ${activeRuntime.match.joinCode || activeRuntime.match.id}` : `Stake ${money(activeRuntime.match.cost)}`;
+  const stakeLabel = isPrivateMatch ? `Match ID ${activeRuntime.match.joinCode || activeRuntime.match.id}` : `Stake ${tokenAmount(activeRuntime.match.cost)}`;
   const difficultyLabel = activeRuntime.match.game === "ludo"
     ? activeRuntime.state.botMode
       ? `${normalizeLudoSeatMode(activeRuntime.match.ludoSeatMode || activeRuntime.state.seatMode) === 2 ? "2-player" : "4-player"} bot table`
@@ -3694,6 +3964,7 @@ function renderActiveGame() {
 
   const canvas = document.getElementById("gameCanvas");
   if (canvas) {
+    destroyLudoThreeDice(canvas);
     canvas.innerHTML = view.html;
   }
 
@@ -3702,6 +3973,10 @@ function renderActiveGame() {
 
   if (typeof view.bind === "function") {
     view.bind();
+  }
+
+  if (activeRuntime.match.game === "ludo" && canvas) {
+    syncLudoThreeDice(canvas);
   }
 
   if (activeRuntime.match.game === "whot") {
@@ -3754,6 +4029,7 @@ function renderCurrentGameToText() {
       selectedDie: state.selectedDie,
       winner: state.winner,
       note: state.note,
+      doubleSixRerollPending: Boolean(state.doubleSixRerollPending),
       seatMode: state.seatMode,
       localSeatId: state.localSeatId || "player1",
       botMode: Boolean(state.botMode),
@@ -3768,6 +4044,7 @@ function renderCurrentGameToText() {
             home: tokens.filter((position) => position === -1).length,
             live: tokens.filter((position) => position >= 0 && !isLudoGoalPosition(position)).length,
             goal: tokens.filter((position) => isLudoGoalPosition(position)).length,
+            captures: Number.isInteger(state.players[color].captures) ? state.players[color].captures : 0,
             tokens: [...tokens],
             stackOrder
           }];
@@ -3954,7 +4231,7 @@ function showResultOverlay(result, summary, payout) {
 
   setPageTitle("resultTitle", titleMap[result] || "Match finished");
   setPageTitle("resultCopy", result === "win" ? `${summary} Stay on the board and choose your next move.` : `${summary} The board stays open while you decide what to do next.`);
-  setPageTitle("resultEyebrow", result === "win" ? (isPrivateMatch ? "Private room complete" : "Wallet updated") : "Session closed");
+  setPageTitle("resultEyebrow", result === "win" ? (isPrivateMatch ? "Private room complete" : `${TOKEN_SYMBOL} wallet updated`) : "Session closed");
 
   if (replayButton) {
     replayButton.textContent = isPrivateMatch ? "Create New Room" : "Play Again";
@@ -3973,11 +4250,11 @@ function showResultOverlay(result, summary, payout) {
       </div>
       <div class="mini-panel">
         <small>${result === "win" ? "Reward" : "Payout"}</small>
-        <strong>${money(payout || 0)}</strong>
+        <strong>${tokenAmount(payout || 0)}</strong>
       </div>
       <div class="mini-panel">
-        <small>Updated Balance</small>
-        <strong>${money(activeRuntime.user.coins)}</strong>
+        <small>Updated ${TOKEN_SYMBOL}</small>
+        <strong>${tokenAmount(getTokenBalance(activeRuntime.user))}</strong>
       </div>
     `;
   }
@@ -4012,11 +4289,21 @@ function clearLudoRollAnimation() {
     return;
   }
 
+  if (activeRuntime.ludoRollAnimationFrameId) {
+    window.cancelAnimationFrame(activeRuntime.ludoRollAnimationFrameId);
+  }
   if (activeRuntime.ludoRollIntervalId) {
     window.clearInterval(activeRuntime.ludoRollIntervalId);
   }
   if (activeRuntime.ludoRollTimeoutId) {
     window.clearTimeout(activeRuntime.ludoRollTimeoutId);
+  }
+  if (Array.isArray(activeRuntime.ludoRollAnimations)) {
+    activeRuntime.ludoRollAnimations.forEach((animation) => {
+      try {
+        animation.cancel();
+      } catch (error) {}
+    });
   }
   if (activeRuntime.ludoRollAudio) {
     activeRuntime.ludoRollAudio.onended = null;
@@ -4031,6 +4318,8 @@ function clearLudoRollAnimation() {
   activeRuntime.ludoRollAudio = null;
   activeRuntime.ludoRollIntervalId = null;
   activeRuntime.ludoRollTimeoutId = null;
+  activeRuntime.ludoRollAnimationFrameId = null;
+  activeRuntime.ludoRollAnimations = [];
   activeRuntime.ludoRolling = null;
 }
 
@@ -7036,6 +7325,17 @@ function getLudoGoalCountForSeat(state, seatId) {
   }, 0);
 }
 
+function getLudoCaptureCountForSeat(state, seatId) {
+  return getLudoOwnedColors(state, seatId).reduce((total, color) => {
+    const captures = Number(state?.players?.[color]?.captures || 0);
+    return total + (Number.isInteger(captures) && captures > 0 ? captures : 0);
+  }, 0);
+}
+
+function ludoColorsShareOwner(state, leftColor, rightColor) {
+  return getLudoColorOwner(state, leftColor) === getLudoColorOwner(state, rightColor);
+}
+
 function renderLudoDraftPanelMarkup(setup) {
   if (setup.seatMode !== 2) {
     return `
@@ -7138,6 +7438,8 @@ GAME_ENGINES.ludo = {
       players,
       turn: "green",
       dice: null,
+      diceVisuals: null,
+      doubleSixRerollPending: false,
       selectedDie: null,
       winner: null,
       note: "Roll the two center dice. Any die showing 6 can open a chip onto its colored gate square.",
@@ -7205,14 +7507,14 @@ GAME_ENGINES.ludo = {
             : isMoving
               ? "The selected chip is walking through each counted cell before the move settles."
             : state.dice
-              ? "Every banked die stays live until it is spent or no legal move remains."
+              ? "Use both live dice. A double six grants a fresh reroll only after both sixes are spent."
               : "Two dice roll from the center of the board every turn."
         }
       ],
       controls: [
-        { label: "Roll", value: "Roll the two center dice. A double six keeps the turn rolling and banks both sixes before the next pair lands." },
+        { label: "Roll", value: "Roll the two center dice. A double six stays as two dice, then gives you a fresh reroll after both sixes are used." },
         { label: "Move", value: "Tap a live die, then move a matching chip along the white runway and arrow direction." },
-        { label: "Goal", value: state.seatMode === 2 ? "Landing on any enemy chip sends it home and scores goal for the covering chip. First seat to clear all assigned chips wins." : "Landing on any enemy chip sends it home and scores goal for the covering chip. First player to goal all four wins." }
+        { label: "Goal", value: state.seatMode === 2 ? "Landing on any enemy chip sends it home, sends the attacking chip straight to goal, and scores that seat. First seat to clear all assigned chips wins." : "Landing on any enemy chip sends it home, sends the attacking chip straight to goal, and scores that player. First player to goal all four wins." }
       ],
       bind() {
         document.getElementById("rollLudoButton")?.addEventListener("click", handleLudoRoll);
@@ -7258,6 +7560,7 @@ function getDefaultLudoStackOrder(color, tokenIndex) {
 function normalizeLudoPlayerState(color, playerState = {}) {
   const rawTokens = Array.isArray(playerState && playerState.tokens) ? playerState.tokens : [];
   const rawStackOrder = Array.isArray(playerState && playerState.stackOrder) ? playerState.stackOrder : [];
+  const captures = Number(playerState && playerState.captures);
   return {
     tokens: Array.from({ length: 4 }, (_, tokenIndex) => {
       const value = Number(rawTokens[tokenIndex]);
@@ -7266,7 +7569,8 @@ function normalizeLudoPlayerState(color, playerState = {}) {
     stackOrder: Array.from({ length: 4 }, (_, tokenIndex) => {
       const value = Number(rawStackOrder[tokenIndex]);
       return Number.isInteger(value) ? value : getDefaultLudoStackOrder(color, tokenIndex);
-    })
+    }),
+    captures: Number.isInteger(captures) && captures >= 0 ? captures : 0
   };
 }
 
@@ -7289,19 +7593,23 @@ function cloneLudoPlayers(players) {
   return {
     green: {
       tokens: [...normalizedPlayers.green.tokens],
-      stackOrder: [...normalizedPlayers.green.stackOrder]
+      stackOrder: [...normalizedPlayers.green.stackOrder],
+      captures: normalizedPlayers.green.captures
     },
     red: {
       tokens: [...normalizedPlayers.red.tokens],
-      stackOrder: [...normalizedPlayers.red.stackOrder]
+      stackOrder: [...normalizedPlayers.red.stackOrder],
+      captures: normalizedPlayers.red.captures
     },
     yellow: {
       tokens: [...normalizedPlayers.yellow.tokens],
-      stackOrder: [...normalizedPlayers.yellow.stackOrder]
+      stackOrder: [...normalizedPlayers.yellow.stackOrder],
+      captures: normalizedPlayers.yellow.captures
     },
     blue: {
       tokens: [...normalizedPlayers.blue.tokens],
-      stackOrder: [...normalizedPlayers.blue.stackOrder]
+      stackOrder: [...normalizedPlayers.blue.stackOrder],
+      captures: normalizedPlayers.blue.captures
     }
   };
 }
@@ -7311,6 +7619,8 @@ function cloneLudoState(state) {
     players: cloneLudoPlayers(state.players),
     turn: state.turn,
     dice: Array.isArray(state.dice) ? [...state.dice] : null,
+    diceVisuals: Array.isArray(state.diceVisuals) ? state.diceVisuals.map((entry) => ({ ...entry })) : null,
+    doubleSixRerollPending: Boolean(state.doubleSixRerollPending),
     selectedDie: state.selectedDie,
     winner: state.winner,
     note: state.note,
@@ -7323,13 +7633,71 @@ function cloneLudoState(state) {
   };
 }
 
+function normalizeLudoDieTone(tone) {
+  return tone === "used" || tone === "dead" ? tone : "normal";
+}
+
+function buildLudoDiceVisuals(values) {
+  if (!Array.isArray(values)) {
+    return null;
+  }
+  return values.map((value, index) => ({
+    face: Number.isInteger(value) ? value : (index % 2 === 0 ? 5 : 2),
+    tone: "normal",
+    variant: normalizeLudoDieVariant(index + (Number.isInteger(value) ? value : 0), 4)
+  }));
+}
+
+function updateLudoDiceVisualTones(diceVisuals, dice, movesByDie = {}) {
+  if (!Array.isArray(diceVisuals)) {
+    return null;
+  }
+  return diceVisuals.map((entry, index) => {
+    const currentValue = Array.isArray(dice) ? dice[index] : null;
+    const moves = movesByDie[index] || [];
+    const face = Number.isInteger(currentValue)
+      ? currentValue
+      : (Number.isInteger(entry?.face) ? entry.face : (index % 2 === 0 ? 5 : 2));
+    const variant = Number.isInteger(entry?.variant)
+      ? normalizeLudoDieVariant(entry.variant, 4)
+      : normalizeLudoDieVariant(index + face, 4);
+    if (Number.isInteger(currentValue)) {
+      return {
+        face,
+        tone: moves.length ? "normal" : "dead",
+        variant
+      };
+    }
+    return {
+      face,
+      tone: normalizeLudoDieTone(entry?.tone) === "dead" ? "dead" : "used",
+      variant
+    };
+  });
+}
+
 const LUDO_ROLL_SPIN_FALLBACK_MS = 2000;
 const LUDO_ROLL_AUDIO_FAILSAFE_MS = 8000;
-const LUDO_ROLL_TICK_MS = 120;
 const LUDO_ROLL_AUDIO_AUDIBLE_THRESHOLD = 0.001;
 const LUDO_ROLL_AUDIO_AUDIBLE_PADDING_MS = 28;
 const LUDO_MOVE_STEP_MS = 220;
 const LUDO_MOVE_SETTLE_MS = 120;
+const LUDO_DIE_NEIGHBOR_RING = Object.freeze({
+  1: [2, 3, 5, 4],
+  2: [1, 4, 6, 3],
+  3: [1, 2, 6, 5],
+  4: [1, 5, 6, 2],
+  5: [1, 3, 6, 4],
+  6: [2, 4, 5, 3]
+});
+const LUDO_DIE_OPPOSITES = Object.freeze({
+  1: 6,
+  2: 5,
+  3: 4,
+  4: 3,
+  5: 2,
+  6: 1
+});
 const LUDO_CAPTURE_SETTLE_MS = 180;
 const LUDO_DEBUG_ROLLS_STORAGE_KEY = "opticore_ludo_debug_rolls";
 let ludoRollAudibleDurationPromise = null;
@@ -7445,16 +7813,7 @@ function isLudoDoubleSixRoll(dice) {
 }
 
 function rollLudoTurnDice() {
-  const rolled = [];
-  let current = rollLudoDicePair();
-  rolled.push(...current);
-
-  while (isLudoDoubleSixRoll(current)) {
-    current = rollLudoDicePair();
-    rolled.push(...current);
-  }
-
-  return rolled;
+  return rollLudoDicePair();
 }
 
 function buildEmptyLudoMovesByDie(dice) {
@@ -7466,13 +7825,251 @@ function buildEmptyLudoMovesByDie(dice) {
   return output;
 }
 
-function nextAnimatedLudoDicePair(previous = []) {
-  const next = rollLudoDicePair();
-  if (Array.isArray(previous) && previous.length === 2 && next[0] === previous[0] && next[1] === previous[1]) {
-    const index = Math.random() < 0.5 ? 0 : 1;
-    next[index] = next[index] === 6 ? 1 : next[index] + 1;
+function getLudoFaceRotation(face) {
+  switch (face) {
+    case 1:
+      return { x: 0, y: 0 };
+    case 2:
+      return { x: 0, y: -90 };
+    case 3:
+      return { x: 90, y: 0 };
+    case 4:
+      return { x: -90, y: 0 };
+    case 5:
+      return { x: 0, y: 90 };
+    case 6:
+      return { x: 180, y: 0 };
+    default:
+      return { x: 0, y: 0 };
   }
-  return next;
+}
+
+function getLudoDiePoseVariant(variant = 0) {
+  const poses = [
+    { x: -18, y: 18, z: -8 },
+    { x: -24, y: -16, z: 10 },
+    { x: -20, y: 24, z: -6 },
+    { x: -22, y: -22, z: 8 }
+  ];
+  return poses[normalizeLudoDieVariant(variant, poses.length)];
+}
+
+function getLudoStaticDiePose(value, variant = 0) {
+  const faceRotation = getLudoFaceRotation(value);
+  const pose = getLudoDiePoseVariant(variant);
+  return {
+    rotateX: faceRotation.x + pose.x,
+    rotateY: faceRotation.y + pose.y,
+    rotateZ: pose.z
+  };
+}
+
+function createLudoRollingDieMotions(dice = [], durationMs = LUDO_ROLL_SPIN_FALLBACK_MS) {
+  const count = Array.isArray(dice) && dice.length ? dice.length : 2;
+  const requestedDurationMs = Number(durationMs) || LUDO_ROLL_SPIN_FALLBACK_MS;
+  const visualDurationMs = Math.max(1180, Math.min(requestedDurationMs, LUDO_ROLL_SPIN_FALLBACK_MS + 140));
+  return Array.from({ length: count }, (_, dieIndex) => {
+    const finalValue = Number.isInteger(dice[dieIndex]) ? dice[dieIndex] : dieIndex % 2 === 0 ? 5 : 2;
+    const variant = dieIndex % 2 === 0 ? (finalValue + 1) % 4 : (finalValue + 3) % 4;
+    const wobbleDirection = dieIndex % 2 === 0 ? -1 : 1;
+    const settlePose = getLudoStaticDiePose(finalValue, variant);
+    const spinLoopsX = 3 + ((finalValue + dieIndex) % 2);
+    const spinLoopsY = 4 + ((finalValue + dieIndex) % 3);
+    const spinLoopsZ = 2 + ((finalValue * 2 + dieIndex) % 2);
+    const startRotateX = settlePose.rotateX + (spinLoopsX * 360) + (94 + (finalValue * 9));
+    const startRotateY = settlePose.rotateY - (spinLoopsY * 360) - (148 + (dieIndex * 22));
+    const startRotateZ = settlePose.rotateZ + (spinLoopsZ * 360) + (86 + (finalValue * 7));
+    const settleRotateX = settlePose.rotateX;
+    const settleRotateY = settlePose.rotateY;
+    const settleRotateZ = settlePose.rotateZ;
+    const overshootRotateX = settleRotateX + (18 * wobbleDirection);
+    const overshootRotateY = settleRotateY + (24 * -wobbleDirection);
+    const overshootRotateZ = settleRotateZ + (14 * wobbleDirection);
+    const shellLiftX = dieIndex % 2 === 0 ? -18 : 16;
+    const shellLiftY = -26 - (((finalValue + dieIndex) % 3) * 5);
+    const shellMidX = shellLiftX * -0.8;
+    const shellMidY = -10 + (dieIndex % 2 === 0 ? 2 : -1.5);
+    const shellBounceX = wobbleDirection * 5;
+    const shellBounceY = 4 + ((finalValue + dieIndex) % 2);
+    const startScale = dieIndex % 2 === 0 ? 0.76 : 0.74;
+    const midScale = dieIndex % 2 === 0 ? 1.08 : 1.05;
+    const durationMsForDie = dieIndex % 2 === 0 ? visualDurationMs : Math.max(1120, visualDurationMs - 70);
+    return {
+      variant,
+      settleRotateX,
+      settleRotateY,
+      settleRotateZ,
+      startRotateX,
+      startRotateY,
+      startRotateZ,
+      overshootRotateX,
+      overshootRotateY,
+      overshootRotateZ,
+      shellLiftX,
+      shellLiftY,
+      shellMidX,
+      shellMidY,
+      shellBounceX,
+      shellBounceY,
+      startScale,
+      midScale,
+      depthStart: dieIndex % 2 === 0 ? 24 : 20,
+      depthMid: dieIndex % 2 === 0 ? 10 : 8,
+      durationMs: durationMsForDie,
+      delayMs: dieIndex % 2 === 0 ? 0 : 45,
+      blurStart: dieIndex % 2 === 0 ? 1.6 : 1.35,
+      blurMid: dieIndex % 2 === 0 ? 0.7 : 0.58
+    };
+  });
+}
+
+function formatLudoRollShellTransform(x = 0, y = 0, scale = 1) {
+  return `translate3d(${Number(x).toFixed(3)}px, ${Number(y).toFixed(3)}px, 0) scale(${Number(scale).toFixed(3)})`;
+}
+
+function formatLudoRollCubeTransform(rotateX = 0, rotateY = 0, rotateZ = 0, scale = 1, depth = 0) {
+  return `translateZ(${Number(depth).toFixed(3)}px) rotateX(${Number(rotateX).toFixed(3)}deg) rotateY(${Number(rotateY).toFixed(3)}deg) rotateZ(${Number(rotateZ).toFixed(3)}deg) scale(${Number(scale).toFixed(3)})`;
+}
+
+function startLudoRollVisualAnimations(runtimeId) {
+  if (!activeRuntime || activeRuntime.match.id !== runtimeId || !activeRuntime.ludoRolling) {
+    return;
+  }
+
+  if (activeRuntime.ludoRollAnimationFrameId) {
+    window.cancelAnimationFrame(activeRuntime.ludoRollAnimationFrameId);
+  }
+  if (Array.isArray(activeRuntime.ludoRollAnimations) && activeRuntime.ludoRollAnimations.length) {
+    activeRuntime.ludoRollAnimations.forEach((animation) => {
+      try {
+        animation.cancel();
+      } catch (error) {}
+    });
+  }
+  activeRuntime.ludoRollAnimations = [];
+
+  const shells = Array.from(document.querySelectorAll("[data-ludo-roll-die]"))
+    .sort((left, right) => Number(left.dataset.ludoRollDie) - Number(right.dataset.ludoRollDie));
+  if (!shells.length) {
+    return;
+  }
+
+  shells.forEach((shell, dieIndex) => {
+    const motion = activeRuntime?.ludoRolling?.motions?.[dieIndex];
+    const cube = shell.querySelector(".ludo-die-cube");
+    if (!motion || !cube) {
+      return;
+    }
+    shell.style.transform = formatLudoRollShellTransform(motion.shellLiftX, motion.shellLiftY, motion.startScale);
+    cube.style.transform = formatLudoRollCubeTransform(
+      motion.startRotateX,
+      motion.startRotateY,
+      motion.startRotateZ,
+      motion.startScale,
+      motion.depthStart
+    );
+    cube.style.filter = `blur(${motion.blurStart}px) saturate(0.94)`;
+  });
+
+  activeRuntime.ludoRollAnimationFrameId = window.requestAnimationFrame(() => {
+    if (!activeRuntime || activeRuntime.match.id !== runtimeId || !activeRuntime.ludoRolling) {
+      return;
+    }
+
+    activeRuntime.ludoRollAnimationFrameId = null;
+    const animations = [];
+    shells.forEach((shell, dieIndex) => {
+      const motion = activeRuntime?.ludoRolling?.motions?.[dieIndex];
+      const cube = shell.querySelector(".ludo-die-cube");
+      if (!motion || !cube || typeof shell.animate !== "function" || typeof cube.animate !== "function") {
+        return;
+      }
+
+      const shellAnimation = shell.animate(
+        [
+          { transform: formatLudoRollShellTransform(motion.shellLiftX, motion.shellLiftY, motion.startScale) },
+          { offset: 0.2, transform: formatLudoRollShellTransform(motion.shellMidX, motion.shellMidY, 1.02) },
+          { offset: 0.58, transform: formatLudoRollShellTransform(motion.shellBounceX * -0.4, motion.shellBounceY, 1.01) },
+          { offset: 0.82, transform: formatLudoRollShellTransform(motion.shellBounceX * 0.12, -1, 0.995) },
+          { transform: formatLudoRollShellTransform(0, 0, 1) }
+        ],
+        {
+          duration: motion.durationMs,
+          delay: motion.delayMs,
+          easing: "cubic-bezier(0.16, 0.78, 0.2, 1)",
+          fill: "both"
+        }
+      );
+
+      const cubeAnimation = cube.animate(
+        [
+          {
+            transform: formatLudoRollCubeTransform(
+              motion.startRotateX,
+              motion.startRotateY,
+              motion.startRotateZ,
+              motion.startScale,
+              motion.depthStart
+            ),
+            filter: `blur(${motion.blurStart}px) saturate(0.94)`
+          },
+          {
+            offset: 0.24,
+            transform: formatLudoRollCubeTransform(
+              motion.startRotateX + ((motion.settleRotateX - motion.startRotateX) * 0.4),
+              motion.startRotateY + ((motion.settleRotateY - motion.startRotateY) * 0.38),
+              motion.startRotateZ + ((motion.settleRotateZ - motion.startRotateZ) * 0.36),
+              motion.midScale,
+              motion.depthMid
+            ),
+            filter: `blur(${Math.max(0.8, motion.blurStart - 0.32)}px) saturate(0.95)`
+          },
+          {
+            offset: 0.6,
+            transform: formatLudoRollCubeTransform(
+              motion.startRotateX + ((motion.settleRotateX - motion.startRotateX) * 0.78),
+              motion.startRotateY + ((motion.settleRotateY - motion.startRotateY) * 0.8),
+              motion.startRotateZ + ((motion.settleRotateZ - motion.startRotateZ) * 0.76),
+              1.04,
+              motion.depthMid * 0.45
+            ),
+            filter: `blur(${motion.blurMid}px) saturate(0.98)`
+          },
+          {
+            offset: 0.84,
+            transform: formatLudoRollCubeTransform(
+              motion.overshootRotateX,
+              motion.overshootRotateY,
+              motion.overshootRotateZ,
+              1.03,
+              3
+            ),
+            filter: "blur(0.08px) saturate(1)"
+          },
+          {
+            transform: formatLudoRollCubeTransform(
+              motion.settleRotateX,
+              motion.settleRotateY,
+              motion.settleRotateZ,
+              1,
+              0
+            ),
+            filter: "blur(0px) saturate(1)"
+          }
+        ],
+        {
+          duration: motion.durationMs,
+          delay: motion.delayMs,
+          easing: "cubic-bezier(0.12, 0.74, 0.18, 1)",
+          fill: "both"
+        }
+      );
+
+      animations.push(shellAnimation, cubeAnimation);
+    });
+
+    activeRuntime.ludoRollAnimations = animations;
+  });
 }
 
 function startLudoRollAnimation(tempState, finalState, onComplete, options = {}) {
@@ -7532,8 +8129,12 @@ function startLudoRollAnimation(tempState, finalState, onComplete, options = {})
 
   activeRuntime.state = tempState;
   activeRuntime.ludoRolling = {
-    currentDice: nextAnimatedLudoDicePair(),
-    finalDice: Array.isArray(finalState.dice) ? [...finalState.dice] : null
+    phase: 0,
+    currentDice: Array.isArray(finalState.dice) && finalState.dice.length
+      ? [...finalState.dice]
+      : [1, 2],
+    finalDice: Array.isArray(finalState.dice) ? [...finalState.dice] : null,
+    motions: createLudoRollingDieMotions(finalState.dice, fallbackDurationMs)
   };
   activeRuntime.ludoRollAudio = playLudoRollSound({
     onEnded() {
@@ -7564,16 +8165,7 @@ function startLudoRollAnimation(tempState, finalState, onComplete, options = {})
     });
   }
   renderActiveGame();
-
-  activeRuntime.ludoRollIntervalId = window.setInterval(() => {
-    if (!activeRuntime || activeRuntime.match.id !== runtimeId || activeRuntime.finished || !activeRuntime.ludoRolling) {
-      clearLudoRollAnimation();
-      return;
-    }
-
-    activeRuntime.ludoRolling.currentDice = nextAnimatedLudoDicePair(activeRuntime.ludoRolling.currentDice);
-    renderActiveGame();
-  }, LUDO_ROLL_TICK_MS);
+  startLudoRollVisualAnimations(runtimeId);
 }
 
 function formatLudoDiceValues(dice) {
@@ -7775,9 +8367,11 @@ function renderLudoBoard(state, movesByDie, highlightedMoves, activeLabel, displ
             ${renderLudoHomePanel("blue", state, highlightedMoves)}
             ${renderLudoHomePanel("red", state, highlightedMoves)}
             <div class="ludo-center-hub${diceLayoutClass}">
-              <div class="ludo-center-dice${diceLayoutClass}">
-                ${dice.map((dieValue, dieIndex) => renderLudoDieShell(state, dieValue, dieIndex, movesByDie[dieIndex] || [], isRolling)).join("")}
-              </div>
+              ${shouldUseLudoSharedDiceScene(state, dice, isRolling)
+                ? renderLudoCenterDiceScene(state, dice, movesByDie, isRolling, diceLayoutClass)
+                : `<div class="ludo-center-dice${diceLayoutClass}">
+                    ${dice.map((dieValue, dieIndex) => renderLudoDieShell(state, dieValue, dieIndex, movesByDie[dieIndex] || [], isRolling)).join("")}
+                  </div>`}
               <button id="rollLudoButton" class="ludo-roll-button" type="button" ${rollDisabled ? "disabled" : ""}>Roll dice</button>
             </div>
           </div>
@@ -7914,6 +8508,7 @@ function renderLudoPiece(color, tokenIndex, clickable, compact, options = {}) {
 function renderLudoPlayerCard(state, color, isRolling = false, bandProfile = false) {
   const ownerId = getLudoColorOwner(state, color);
   const pieces = state.players[color].tokens;
+  const captureScore = Number.isInteger(state.players[color].captures) ? state.players[color].captures : 0;
   const homeCount = pieces.filter((position) => position === -1).length;
   const trackCount = pieces.filter((position) => position >= 0 && !isLudoGoalPosition(position)).length;
   const goalCount = pieces.filter((position) => isLudoGoalPosition(position)).length;
@@ -7952,6 +8547,10 @@ function renderLudoPlayerCard(state, color, isRolling = false, bandProfile = fal
           <small>Goal</small>
           <strong>${goalCount}</strong>
         </div>
+        <div class="ludo-player-stat">
+          <small>Score</small>
+          <strong>${captureScore}</strong>
+        </div>
       </div>
     </article>
   `;
@@ -7985,10 +8584,17 @@ function getLudoWinnerLabel(state) {
 function renderLudoPlayerCard(state, color, isRolling = false, bandProfile = false) {
   const ownerId = getLudoColorOwner(state, color);
   const pieces = state.players[color].tokens;
+  const seatMode = normalizeLudoSeatMode(state.seatMode);
+  const seatManaged = seatMode === 2;
+  const captureScore = seatManaged
+    ? getLudoCaptureCountForSeat(state, ownerId)
+    : (Number.isInteger(state.players[color].captures) ? state.players[color].captures : 0);
   const homeCount = pieces.filter((position) => position === -1).length;
   const trackCount = pieces.filter((position) => position >= 0 && !isLudoGoalPosition(position)).length;
-  const goalCount = pieces.filter((position) => isLudoGoalPosition(position)).length;
-  const active = state.turn === color && !state.winner;
+  const goalCount = seatManaged
+    ? getLudoGoalCountForSeat(state, ownerId)
+    : pieces.filter((position) => isLudoGoalPosition(position)).length;
+  const active = getLudoTurnColors(state).includes(color) && !state.winner;
   const movesByDie = active && !isRolling && state.dice ? getLudoAvailableMovesByDie(state, color) : buildEmptyLudoMovesByDie(state.dice);
   const liveDice = getPlayableLudoDice(movesByDie).length;
   const status = state.winner === color
@@ -8020,8 +8626,12 @@ function renderLudoPlayerCard(state, color, isRolling = false, bandProfile = fal
           <strong>${trackCount}</strong>
         </div>
         <div class="ludo-player-stat">
-          <small>Goal</small>
+          <small>${seatManaged ? "Seat Goal" : "Goal"}</small>
           <strong>${goalCount}</strong>
+        </div>
+        <div class="ludo-player-stat">
+          <small>${seatManaged ? "Seat Score" : "Score"}</small>
+          <strong>${captureScore}</strong>
         </div>
       </div>
     </article>
@@ -8080,14 +8690,14 @@ GAME_ENGINES.ludo.render = function renderConfiguredLudo(runtime) {
           : isMoving
             ? "The selected chip is walking through each counted cell before the move settles."
           : state.dice
-            ? "Every banked die stays live until it is spent or no legal move remains."
+            ? "Use both live dice. A double six grants a fresh reroll only after both sixes are spent."
               : "Two dice roll from the center of the board every turn."
       }
     ],
     controls: [
-      { label: "Roll", value: "Roll the two center dice. A double six keeps the turn rolling and banks both sixes before the next pair lands." },
+      { label: "Roll", value: "Roll the two center dice. A double six stays as two dice, then gives you a fresh reroll after both sixes are used." },
       { label: "Move", value: "Tap a live die, then move a matching chip along the white runway and arrow direction." },
-      { label: "Goal", value: state.seatMode === 2 ? "Landing on any enemy chip sends it home and scores goal for the covering chip. First seat to clear all assigned chips wins." : "Landing on any enemy chip sends it home and scores goal for the covering chip. First player to goal all four wins." }
+      { label: "Goal", value: state.seatMode === 2 ? "Landing on any enemy chip sends it home, sends the attacking chip straight to goal, and scores that seat. First seat to clear all assigned chips wins." : "Landing on any enemy chip sends it home, sends the attacking chip straight to goal, and scores that player. First player to goal all four wins." }
     ],
     bind() {
       document.getElementById("rollLudoButton")?.addEventListener("click", handleLudoRoll);
@@ -8105,49 +8715,132 @@ GAME_ENGINES.ludo.render = function renderConfiguredLudo(runtime) {
   };
 };
 
-function renderLudoDieShell(state, value, dieIndex, moves, isRolling = false) {
-  const idle = !isRolling && !Array.isArray(state.dice);
-  const used = !isRolling && !idle && !Number.isInteger(value);
-  const disabled = !isRolling && !idle && !used && !moves.length;
+function normalizeLudoDieVariant(variant, length) {
+  if (!length) {
+    return 0;
+  }
+  const normalized = Number.isFinite(variant) ? Math.trunc(variant) : 0;
+  return ((normalized % length) + length) % length;
+}
+
+function getLudoDieOrientation(value, variant = 0) {
+  const front = Number.isInteger(value) && value >= 1 && value <= 6 ? value : 1;
+  const ring = LUDO_DIE_NEIGHBOR_RING[front] || LUDO_DIE_NEIGHBOR_RING[1];
+  const index = normalizeLudoDieVariant(variant, ring.length);
+  return {
+    front,
+    back: LUDO_DIE_OPPOSITES[front] || 6,
+    top: ring[index],
+    right: ring[(index + 1) % ring.length],
+    bottom: ring[(index + 2) % ring.length],
+    left: ring[(index + 3) % ring.length]
+  };
+}
+
+function renderLudoDieCube(faceMarkup, cubeClass = "") {
+  return `
+    <span class="ludo-die-cube${cubeClass ? ` ${cubeClass}` : ""}" aria-hidden="true">
+      ${faceMarkup}
+    </span>
+  `;
+}
+
+function getLudoDieVisualState(state, value, dieIndex, moves, isRolling = false) {
+  const storedVisual = Array.isArray(state.diceVisuals) ? state.diceVisuals[dieIndex] : null;
+  const tone = !isRolling ? normalizeLudoDieTone(storedVisual?.tone) : "normal";
+  const face = Number.isInteger(value)
+    ? value
+    : (Number.isInteger(storedVisual?.face) ? storedVisual.face : null);
+  const variant = Number.isInteger(storedVisual?.variant)
+    ? normalizeLudoDieVariant(storedVisual.variant, 4)
+    : normalizeLudoDieVariant(dieIndex + (Number.isInteger(face) ? face : 0), 4);
+  const idle = !isRolling && !Array.isArray(state.dice) && !storedVisual;
+  const used = !isRolling && tone === "used";
+  const disabled = !isRolling && !idle && !used && (tone === "dead" || !moves.length);
   const selected = state.selectedDie === dieIndex;
   const className = `ludo-die-shell${selected ? " is-selected" : ""}${isRolling ? " is-rolling" : ""}${idle ? " is-idle" : ""}${used ? " is-used" : ""}${disabled ? " is-dead" : ""}`;
+  const rollingMotion = isRolling ? activeRuntime?.ludoRolling?.motions?.[dieIndex] : null;
   const label = isRolling
     ? `Die ${dieIndex + 1} rolling`
     : idle
     ? `Die ${dieIndex + 1} waiting for roll`
     : used
       ? `Die ${dieIndex + 1} used`
-      : `Die ${dieIndex + 1} shows ${value}`;
-  const body = idle
-    ? renderLudoDieIdleFace()
-    : used
-      ? renderLudoDieUsedFace()
-    : renderLudoDieFace(Number.isInteger(value) ? value : 0);
+      : disabled
+        ? `Die ${dieIndex + 1} unavailable`
+        : `Die ${dieIndex + 1} shows ${face ?? value}`;
+  return {
+    idle,
+    used,
+    disabled,
+    selected,
+    face,
+    tone,
+    variant,
+    className,
+    rollingMotion,
+    label
+  };
+}
 
-  if (!state.winner && !idle && !used && moves.length) {
-    return `<button class="${className}" type="button" data-ludo-die="${dieIndex}" aria-label="${escapeHtml(label)}">${body}</button>`;
+function renderLudoDieShell(state, value, dieIndex, moves, isRolling = false) {
+  const visualState = getLudoDieVisualState(state, value, dieIndex, moves, isRolling);
+  const orientationVariant = isRolling
+    ? ((activeRuntime?.ludoRolling?.phase || 0) * 2) + dieIndex
+    : visualState.variant;
+  const body = isRolling
+    ? renderLudoRollingDieCube(dieIndex)
+    : visualState.idle
+    ? renderLudoDieIdleFace(dieIndex)
+    : visualState.used
+      ? renderLudoDieUsedFace(visualState.face, orientationVariant)
+      : renderLudoNumericDieCube(Number.isInteger(visualState.face) ? visualState.face : 0, orientationVariant);
+  const staticValue = visualState.idle
+    ? (dieIndex % 2 === 0 ? 5 : 2)
+    : Number.isInteger(visualState.face)
+      ? visualState.face
+      : null;
+  const staticPose = !isRolling && Number.isInteger(staticValue)
+    ? getLudoStaticDiePose(staticValue, orientationVariant)
+    : null;
+  const shellPose = visualState.rollingMotion || staticPose;
+  const styleAttr = shellPose
+    ? ` style="--ludo-roll-base-x:${(shellPose.settleRotateX ?? shellPose.rotateX)}deg; --ludo-roll-base-y:${(shellPose.settleRotateY ?? shellPose.rotateY)}deg; --ludo-roll-start-tilt:${(shellPose.settleRotateZ ?? shellPose.rotateZ)}deg;"`
+    : "";
+  const rollingAttr = isRolling ? ` data-ludo-roll-die="${dieIndex}"` : "";
+
+  if (!state.winner && !visualState.idle && !visualState.used && moves.length) {
+    return `<button class="${visualState.className}" type="button" data-ludo-die="${dieIndex}"${rollingAttr} aria-label="${escapeHtml(visualState.label)}"${styleAttr}>${body}</button>`;
   }
 
-  return `<div class="${className}" aria-label="${escapeHtml(label)}">${body}</div>`;
+  return `<div class="${visualState.className}"${rollingAttr} aria-label="${escapeHtml(visualState.label)}"${styleAttr}>${body}</div>`;
 }
 
-function renderLudoDieIdleFace() {
-  return `
-    <div class="ludo-die-face is-idle-face" aria-hidden="true">
-      <span class="ludo-die-idle-text">DICE</span>
-    </div>
-  `;
+function renderLudoDieSceneProxy(state, value, dieIndex, moves, isRolling = false) {
+  const visualState = getLudoDieVisualState(state, value, dieIndex, moves, isRolling);
+  const className = `${visualState.className} is-scene-proxy`;
+  const body = `<span class="ludo-die-proxy-core" aria-hidden="true"></span>`;
+  if (!state.winner && !visualState.idle && !visualState.used && moves.length) {
+    return `<button class="${className}" type="button" data-ludo-die="${dieIndex}" aria-label="${escapeHtml(visualState.label)}">${body}</button>`;
+  }
+  return `<div class="${className}" aria-label="${escapeHtml(visualState.label)}">${body}</div>`;
 }
 
-function renderLudoDieUsedFace() {
-  return `
-    <div class="ludo-die-face is-used-face" aria-hidden="true">
-      <span class="ludo-die-status-text">PLAYED</span>
-    </div>
-  `;
+function renderLudoDieIdleFace(dieIndex = 0) {
+  const face = dieIndex % 2 === 0 ? 5 : 2;
+  const variant = dieIndex % 2 === 0 ? 1 : 3;
+  return renderLudoThreeDieViewport(face, variant, { viewportClass: "is-idle-viewport" });
 }
 
-function renderLudoDieFace(value) {
+function renderLudoDieUsedFace(face, variant = 0) {
+  const usedFace = Number.isInteger(face) ? face : 1;
+  return renderLudoThreeDieViewport(usedFace, variant, {
+    viewportClass: "is-used-viewport",
+    tone: "used"
+  });
+}
+
+function renderLudoDiePips(value) {
   const pips = {
     1: [4],
     2: [0, 8],
@@ -8157,11 +8850,143 @@ function renderLudoDieFace(value) {
     6: [0, 2, 3, 5, 6, 8]
   };
   const active = new Set(pips[value] || []);
+  return Array.from({ length: 9 }, (_, index) => `<span class="ludo-die-pip ${active.has(index) ? "is-on" : ""}"></span>`).join("");
+}
+
+function renderLudoDieFace(value, extraClass = "") {
   return `
-    <div class="ludo-die-face" aria-hidden="true">
-      ${Array.from({ length: 9 }, (_, index) => `<span class="ludo-die-pip ${active.has(index) ? "is-on" : ""}"></span>`).join("")}
+    <span class="ludo-die-face${extraClass ? ` ${extraClass}` : ""}" aria-hidden="true">
+      ${renderLudoDiePips(value)}
+    </span>
+  `;
+}
+
+function renderLudoThreeDieViewport(value, variant = 0, options = {}) {
+  const face = Number.isInteger(value) && value >= 1 && value <= 6 ? value : 1;
+  const rolling = Boolean(options.rolling);
+  const durationMs = Math.max(900, Math.round(Number(options.durationMs) || 1600));
+  const delayMs = Math.max(0, Math.round(Number(options.delayMs) || 0));
+  const tone = normalizeLudoDieTone(options.tone);
+  const viewportClass = options.viewportClass ? ` ${options.viewportClass}` : "";
+  return `<span class="ludo-die-viewport${viewportClass}" data-ludo-three-die data-ludo-die-face="${face}" data-ludo-die-variant="${normalizeLudoDieVariant(variant, 4)}" data-ludo-die-tone="${tone}" data-ludo-die-rolling="${rolling ? "1" : "0"}" data-ludo-die-duration="${durationMs}" data-ludo-die-delay="${delayMs}" aria-hidden="true"></span>`;
+}
+
+function renderLudoThreeDiceGroup(diceStates = []) {
+  return `<span class="ludo-dice-scene" data-ludo-three-dice-group data-ludo-dice-group-states="${escapeHtml(JSON.stringify(diceStates))}" aria-hidden="true"></span>`;
+}
+
+function shouldUseLudoSharedDiceScene(state, dice, isRolling = false) {
+  if (Array.isArray(dice) && dice.length === 2 && dice.every((value) => Number.isInteger(value) || value === null)) {
+    return true;
+  }
+  if (!isRolling && Array.isArray(state.diceVisuals) && state.diceVisuals.length === 2) {
+    return true;
+  }
+  return !isRolling && !Array.isArray(state.dice);
+}
+
+function buildLudoSharedDiceStates(state, dice, isRolling = false) {
+  const storedVisuals = Array.isArray(state.diceVisuals)
+    ? state.diceVisuals
+    : buildLudoDiceVisuals(Array.isArray(dice) ? dice : null);
+  return Array.from({ length: 2 }, (_, dieIndex) => {
+    if (isRolling) {
+      const finalValue = Number.isInteger(activeRuntime?.ludoRolling?.finalDice?.[dieIndex])
+        ? activeRuntime.ludoRolling.finalDice[dieIndex]
+        : (dieIndex % 2 === 0 ? 5 : 2);
+      const motion = activeRuntime?.ludoRolling?.motions?.[dieIndex];
+      return {
+        face: finalValue,
+        variant: normalizeLudoDieVariant(motion?.variant ?? dieIndex, 4),
+        rolling: true,
+        tone: "normal",
+        durationMs: motion?.durationMs,
+        delayMs: motion?.delayMs
+      };
+    }
+
+    const storedVisual = Array.isArray(storedVisuals) ? storedVisuals[dieIndex] : null;
+    if (!Array.isArray(state.dice) && !storedVisual) {
+      return {
+        face: dieIndex % 2 === 0 ? 5 : 2,
+        variant: dieIndex % 2 === 0 ? 1 : 3,
+        rolling: false,
+        tone: "normal"
+      };
+    }
+
+    const value = Number.isInteger(dice?.[dieIndex])
+      ? dice[dieIndex]
+      : (Number.isInteger(storedVisual?.face) ? storedVisual.face : (dieIndex % 2 === 0 ? 5 : 2));
+    return {
+      face: value,
+      variant: Number.isInteger(storedVisual?.variant)
+        ? normalizeLudoDieVariant(storedVisual.variant, 4)
+        : normalizeLudoDieVariant(dieIndex + value, 4),
+      rolling: false,
+      tone: normalizeLudoDieTone(storedVisual?.tone)
+    };
+  });
+}
+
+function renderLudoCenterDiceScene(state, dice, movesByDie, isRolling = false, diceLayoutClass = "") {
+  const diceStates = buildLudoSharedDiceStates(state, dice, isRolling);
+  const controls = Array.from({ length: 2 }, (_, dieIndex) =>
+    renderLudoDieSceneProxy(state, Array.isArray(dice) ? dice[dieIndex] : null, dieIndex, movesByDie[dieIndex] || [], isRolling)
+  ).join("");
+  return `
+    <div class="ludo-center-dice is-shared-scene${diceLayoutClass}">
+      ${renderLudoThreeDiceGroup(diceStates)}
+      <div class="ludo-center-dice-hitboxes">
+        ${controls}
+      </div>
     </div>
   `;
+}
+
+function renderLudoPhysicalDieCube(value, variant = 0, cubeClass = "") {
+  const orientation = getLudoDieOrientation(value, variant);
+  return renderLudoDieCube(
+    [
+      renderLudoDieFace(orientation.front, "is-front-face"),
+      renderLudoDieFace(orientation.back, "is-back-face"),
+      renderLudoDieFace(orientation.top, "is-top-face"),
+      renderLudoDieFace(orientation.bottom, "is-bottom-face"),
+      renderLudoDieFace(orientation.right, "is-right-face"),
+      renderLudoDieFace(orientation.left, "is-left-face")
+    ].join(""),
+    cubeClass
+  );
+}
+
+function renderLudoFixedDieCube(cubeClass = "") {
+  return renderLudoDieCube(
+    [
+      renderLudoDieFace(1, "is-front-face"),
+      renderLudoDieFace(6, "is-back-face"),
+      renderLudoDieFace(3, "is-top-face"),
+      renderLudoDieFace(4, "is-bottom-face"),
+      renderLudoDieFace(2, "is-right-face"),
+      renderLudoDieFace(5, "is-left-face")
+    ].join(""),
+    cubeClass
+  );
+}
+
+function renderLudoRollingDieCube(dieIndex = 0) {
+  const finalValue = Number.isInteger(activeRuntime?.ludoRolling?.finalDice?.[dieIndex])
+    ? activeRuntime.ludoRolling.finalDice[dieIndex]
+    : (dieIndex % 2 === 0 ? 5 : 2);
+  const motion = activeRuntime?.ludoRolling?.motions?.[dieIndex];
+  return renderLudoThreeDieViewport(finalValue, motion?.variant ?? dieIndex, {
+    rolling: true,
+    durationMs: motion?.durationMs,
+    delayMs: motion?.delayMs
+  });
+}
+
+function renderLudoNumericDieCube(value, variant = 0) {
+  return renderLudoThreeDieViewport(value, variant);
 }
 
 function getLudoAvailableMovesByDie(state, color) {
@@ -8218,7 +9043,7 @@ function getLudoCaptureTargets(state, color, nextPosition) {
   const destinationKey = ludoCellKey(...ludoCoordinateForToken(color, nextPosition));
   const captures = [];
 
-  LUDO_TURN_ORDER.filter((entry) => entry !== color).forEach((enemyColor) => {
+  LUDO_TURN_ORDER.filter((entry) => entry !== color && !ludoColorsShareOwner(state, color, entry)).forEach((enemyColor) => {
     state.players[enemyColor].tokens.forEach((enemyPosition, enemyTokenIndex) => {
       if (enemyPosition >= 0 && !isLudoGoalPosition(enemyPosition)) {
         const enemyKey = ludoCellKey(...ludoCoordinateForToken(enemyColor, enemyPosition));
@@ -8252,7 +9077,7 @@ function previewLudoMove(state, color, tokenIndex, die) {
   const current = state.players[color].tokens[tokenIndex];
   const nextPosition = current === -1 ? 0 : current + die;
   const captureTargets = getLudoCaptureTargets(state, color, nextPosition);
-  const finalPosition = nextPosition;
+  const finalPosition = captureTargets.length ? LUDO_GOAL_POSITION : nextPosition;
 
   return {
     nextPosition,
@@ -8266,6 +9091,9 @@ function previewLudoMove(state, color, tokenIndex, die) {
 }
 
 function describeLudoMove(preview) {
+  if (preview.finishes && preview.captures) {
+    return "captured into the center goal";
+  }
   if (preview.finishes) {
     return "reached the center goal";
   }
@@ -8294,13 +9122,18 @@ function handleLudoRoll() {
   const turnSummary = getLudoTurnSummary(state, state.turn);
   const turnColorNames = formatLudoTurnColorNames(getLudoTurnColors(state), true);
   const rolledDice = rollLudoTurnDice();
+  const doubleSixRolled = isLudoDoubleSixRoll(rolledDice);
   state.dice = [...rolledDice];
+  state.doubleSixRerollPending = doubleSixRolled;
   const movesByDie = getLudoAvailableMovesByDie(state, state.turn);
+  state.diceVisuals = updateLudoDiceVisualTones(buildLudoDiceVisuals(rolledDice), state.dice, movesByDie);
   const playable = getPlayableLudoDice(movesByDie);
   const rollingState = cloneLudoState(activeRuntime.state);
   rollingState.note = "Rolling dice...";
   rollingState.selectedDie = null;
-  const bonusRollCopy = rolledDice.length > 2 ? " Double six kept the rack rolling, and every banked die stays live." : "";
+  const bonusRollCopy = doubleSixRolled
+    ? " Double six grants another two-dice roll after both sixes are spent."
+    : "";
 
   if (!playable.length) {
     state.selectedDie = null;
@@ -8317,8 +9150,13 @@ function handleLudoRoll() {
         }
         passed.dice = null;
         passed.selectedDie = null;
-        passed.turn = nextLudoColor(passed, state.turn);
-        passed.note = `${turnSummary.fullLabel} rolled ${formatLudoDiceValues(rolledDice)} but no ${turnColorNames} chip could move.${bonusRollCopy} Turn passes to ${getLudoTurnSummary(passed, passed.turn).fullLabel}.`;
+        if (passed.doubleSixRerollPending) {
+          passed.doubleSixRerollPending = false;
+          passed.note = `${turnSummary.fullLabel} rolled ${formatLudoDiceValues(rolledDice)} but no ${turnColorNames} chip could move.${bonusRollCopy} Roll again.`;
+        } else {
+          passed.turn = nextLudoColor(passed, state.turn);
+          passed.note = `${turnSummary.fullLabel} rolled ${formatLudoDiceValues(rolledDice)} but no ${turnColorNames} chip could move.${bonusRollCopy} Turn passes to ${getLudoTurnSummary(passed, passed.turn).fullLabel}.`;
+        }
         persistRuntime(passed);
         if (shouldRunLudoBotTurn(passed)) {
           scheduleRuntimeAction(runLudoBotCycle, 650);
@@ -8427,8 +9265,16 @@ function moveLudoToken(state, color, tokenIndex, dieIndex) {
     preview.captureTargets.forEach((capture) => {
       next.players[capture.color].tokens[capture.tokenIndex] = -1;
     });
+    next.players[color].captures = (Number.isInteger(next.players[color].captures) ? next.players[color].captures : 0) + preview.captureTargets.length;
   }
 
+  next.dice[dieIndex] = null;
+  const remainingMoves = getLudoAvailableMovesByDie(next, next.turn);
+  next.diceVisuals = updateLudoDiceVisualTones(
+    Array.isArray(next.diceVisuals) ? next.diceVisuals : buildLudoDiceVisuals(state.dice),
+    next.dice,
+    remainingMoves
+  );
   const finishedTokens = next.players[color].tokens.filter((position) => isLudoGoalPosition(position)).length;
   const ownerId = getLudoColorOwner(next, color);
   if (finishedTokens === 4 && getLudoGoalCountForSeat(next, ownerId) >= getLudoGoalTargetForSeat(next, ownerId)) {
@@ -8449,10 +9295,10 @@ function moveLudoToken(state, color, tokenIndex, dieIndex) {
     };
   }
 
-  next.dice[dieIndex] = null;
-  const remainingMoves = getLudoAvailableMovesByDie(next, next.turn);
   const remainingPlayable = getPlayableLudoDice(remainingMoves);
-  const captureCopy = preview.captures ? ` and sent ${preview.captures} chip${preview.captures > 1 ? "s" : ""} back home` : "";
+  const captureCopy = preview.captures
+    ? ` and sent ${preview.captures} chip${preview.captures > 1 ? "s" : ""} back home for +${preview.captures} score${preview.finishes ? " while scoring goal" : ""}`
+    : "";
   const moveCopy = `${getLudoTurnSummary(next, color).fullLabel} used ${dieValue}, ${describeLudoMove(preview)}${captureCopy}.`;
 
   if (remainingPlayable.length) {
@@ -8471,8 +9317,13 @@ function moveLudoToken(state, color, tokenIndex, dieIndex) {
 
   next.dice = null;
   next.selectedDie = null;
-  next.turn = nextLudoColor(next, state.turn);
-  next.note = `${moveCopy} Turn passes to ${getLudoTurnSummary(next, next.turn).fullLabel}.`;
+  if (next.doubleSixRerollPending) {
+    next.doubleSixRerollPending = false;
+    next.note = `${moveCopy} Double six completed. Roll the two center dice again.`;
+  } else {
+    next.turn = nextLudoColor(next, state.turn);
+    next.note = `${moveCopy} Turn passes to ${getLudoTurnSummary(next, next.turn).fullLabel}.`;
+  }
   return {
     color,
     tokenIndex,
@@ -8516,10 +9367,14 @@ function runLudoBotCycle() {
   const turnSummary = getLudoTurnSummary(next, botColor);
   const turnColorNames = formatLudoTurnColorNames(getLudoTurnColors(next, botColor), true);
   next.dice = rollLudoTurnDice();
+  next.doubleSixRerollPending = isLudoDoubleSixRoll(next.dice);
   next.selectedDie = null;
   const movesByDie = getLudoAvailableMovesByDie(next, botColor);
+  next.diceVisuals = updateLudoDiceVisualTones(buildLudoDiceVisuals(next.dice), next.dice, movesByDie);
   const playable = getPlayableLudoDice(movesByDie);
-  const bonusRollCopy = next.dice.length > 2 ? " Double six kept the rack rolling." : "";
+  const bonusRollCopy = next.doubleSixRerollPending
+    ? " Double six grants another two-dice roll after both sixes are spent."
+    : "";
   const rollingState = cloneLudoState(activeRuntime.state);
   rollingState.note = `${turnSummary.fullLabel} is rolling the dice.`;
   rollingState.selectedDie = null;
@@ -8538,8 +9393,13 @@ function runLudoBotCycle() {
         }
         passed.dice = null;
         passed.selectedDie = null;
-        passed.turn = nextLudoColor(passed, botColor);
-        passed.note = `${turnSummary.fullLabel} rolled ${formatLudoDiceValues(next.dice)} but no ${turnColorNames} chip could move.${bonusRollCopy} Turn passes to ${getLudoTurnSummary(passed, passed.turn).fullLabel}.`;
+        if (passed.doubleSixRerollPending) {
+          passed.doubleSixRerollPending = false;
+          passed.note = `${turnSummary.fullLabel} rolled ${formatLudoDiceValues(next.dice)} but no ${turnColorNames} chip could move.${bonusRollCopy} Rolling again.`;
+        } else {
+          passed.turn = nextLudoColor(passed, botColor);
+          passed.note = `${turnSummary.fullLabel} rolled ${formatLudoDiceValues(next.dice)} but no ${turnColorNames} chip could move.${bonusRollCopy} Turn passes to ${getLudoTurnSummary(passed, passed.turn).fullLabel}.`;
+        }
         persistRuntime(passed);
         if (shouldRunLudoBotTurn(passed)) {
           scheduleRuntimeAction(runLudoBotCycle, 650);
@@ -8574,7 +9434,12 @@ function resolveLudoBotTurn(color) {
     next.note = `${getLudoTurnSummary(next, color).fullLabel} could not spend the remaining dice.`;
     next.dice = null;
     next.selectedDie = null;
-    next.turn = nextLudoColor(next, color);
+    if (next.doubleSixRerollPending) {
+      next.doubleSixRerollPending = false;
+      next.note = `${getLudoTurnSummary(next, color).fullLabel} could not spend the remaining dice. Rolling again after the double six.`;
+    } else {
+      next.turn = nextLudoColor(next, color);
+    }
     persistRuntime(next);
     if (shouldRunLudoBotTurn(next)) {
       scheduleRuntimeAction(runLudoBotCycle, 650);

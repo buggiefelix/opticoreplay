@@ -19,18 +19,19 @@
         </div>
       </a>
       <div class="topbar-actions">
-        <span class="info-pill">Balance <strong data-balance>N0</strong></span>
+        <span class="info-pill">OPT <strong data-balance>0 OPT</strong></span>
       </div>
     </header>
 
     <section class="wallet-grid" style="margin-top: 22px;">
       <section class="panel ring-card">
-        <span class="eyebrow">Available balance</span>
+        <span class="eyebrow">Playable balance</span>
         <div class="balance-ring">
           <div class="balance-ring-inner">
-            <small>Wallet</small>
-            <strong id="walletBalance">N0</strong>
-            <span class="muted-text">Ready for deposits, entries, and withdrawals.</span>
+            <small>OPT wallet</small>
+            <strong id="walletBalance">0 OPT</strong>
+            <span id="walletCashBalance" class="muted-text wallet-balance-note">Cash wallet N0</span>
+            <span class="muted-text wallet-balance-note">Use OPT for ranked matches and tournaments, then convert back to cash when needed.</span>
           </div>
         </div>
         <div id="walletHighlights" class="wallet-highlights"></div>
@@ -39,19 +40,45 @@
       <section class="section-stack">
         <div class="panel">
           <span class="eyebrow">Deposit</span>
-          <h2 class="panel-title">Fund your wallet</h2>
+          <h2 class="panel-title">Fund your cash wallet</h2>
           <form id="depositForm" class="field-grid" style="margin-top: 18px;">
             <div class="field">
               <label for="depositAmount">Amount</label>
               <input id="depositAmount" name="amount" type="number" min="100" step="100" placeholder="500">
             </div>
-            <button class="btn btn-primary" type="submit">Add Funds</button>
+            <button class="btn btn-primary" type="submit">Add Cash</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <span class="eyebrow">Exchange</span>
+          <h2 class="panel-title">Buy playable OPT</h2>
+          <p class="panel-copy" style="margin-top: 10px;">Current phase uses a simple 1 cash = 1 OPT rate.</p>
+          <form id="buyTokensForm" class="field-grid" style="margin-top: 18px;">
+            <div class="field">
+              <label for="buyTokensAmount">Cash Amount</label>
+              <input id="buyTokensAmount" name="amount" type="number" min="100" step="100" placeholder="500">
+            </div>
+            <button class="btn btn-primary" type="submit">Buy OPT</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <span class="eyebrow">Exchange</span>
+          <h2 class="panel-title">Convert OPT back to cash</h2>
+          <p class="panel-copy" style="margin-top: 10px;">Sell OPT into your cash wallet before making a withdrawal.</p>
+          <form id="sellTokensForm" class="field-grid" style="margin-top: 18px;">
+            <div class="field">
+              <label for="sellTokensAmount">OPT Amount</label>
+              <input id="sellTokensAmount" name="amount" type="number" min="100" step="100" placeholder="500">
+            </div>
+            <button class="btn btn-secondary" type="submit">Sell OPT</button>
           </form>
         </div>
 
         <div class="panel">
           <span class="eyebrow">Withdraw</span>
-          <h2 class="panel-title">Send a withdrawal request</h2>
+          <h2 class="panel-title">Send a cash withdrawal request</h2>
           <form id="withdrawForm" class="field-grid" style="margin-top: 18px;">
             <div class="field-grid two">
               <div class="field">
@@ -73,7 +100,7 @@
                 <input id="withdrawAccountName" name="accountName" placeholder="Player Name">
               </div>
             </div>
-            <button class="btn btn-secondary" type="submit">Request Withdrawal</button>
+            <button class="btn btn-secondary" type="submit">Request Cash-Out</button>
           </form>
         </div>
       </section>

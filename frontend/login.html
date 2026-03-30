@@ -14,7 +14,7 @@
       <section class="auth-card auth-art">
         <span class="eyebrow">Welcome back</span>
         <h1 class="hero-title" style="font-size: clamp(2.3rem, 5vw, 3.8rem);">Return to the lobby, fund up, and queue your next game.</h1>
-        <p class="hero-copy">Use the account you created to access your wallet, match history, leaderboard rank, and all five playable games.</p>
+        <p class="hero-copy">Use the account you created to access your wallet, match history, leaderboard rank, and all eight playable games.</p>
         <div class="auth-logo-frame">
           <img src="a_professional_logo_design_for_opticore_play_is.png" alt="Opticore Play logo">
         </div>
@@ -28,11 +28,14 @@
         <form id="loginForm">
           <div class="field">
             <label for="loginUsername">Username or Email</label>
-            <input id="loginUsername" name="username" autocomplete="username" placeholder="Enter your username or email" required>
+            <input id="loginUsername" name="username" autocomplete="username" placeholder="Enter your username or email" spellcheck="false" autofocus required>
           </div>
           <div class="field">
             <label for="loginPassword">Password</label>
-            <input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+            <div class="password-field">
+              <input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+              <button class="password-toggle" type="button" data-password-toggle aria-controls="loginPassword" aria-label="Show password">Show</button>
+            </div>
           </div>
           <button class="btn btn-primary" type="submit">Login</button>
         </form>
