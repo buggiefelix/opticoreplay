@@ -6,15 +6,26 @@
     "start": "node backend/server.js",
     "dev": "node backend/server.js",
     "build": "npm run build:frontend",
-    "build:frontend": "node scripts/build-frontend.mjs"
+    "build:frontend": "node scripts/build-frontend.mjs",
+    "mobile:build": "node scripts/build-mobile.mjs",
+    "mobile:copy": "npm run mobile:build && npx cap copy",
+    "mobile:sync": "npm run mobile:build && npx cap sync",
+    "mobile:android": "npm run mobile:sync && npx cap open android",
+    "mobile:ios": "npm run mobile:sync && npx cap open ios"
   },
   "engines": {
     "node": "20.x"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/ios": "^8.3.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "mongodb": "^6.17.0",
     "three": "^0.183.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.3.0"
   }
 }

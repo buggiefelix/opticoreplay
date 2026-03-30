@@ -69,6 +69,12 @@ const DEFAULT_CORS_ORIGIN_PATTERNS = [
   "http://127.0.0.1:5173",
   "http://localhost:5173"
 ];
+const MOBILE_CORS_ORIGIN_PATTERNS = [
+  "capacitor://localhost",
+  "http://localhost",
+  "https://localhost",
+  "ionic://localhost"
+];
 const DEFAULT_WELCOME_TOKENS = 2500;
 const TOKEN_EXCHANGE_RATE = 1;
 const MAX_WALLET_BALANCE = 50000000;
@@ -115,7 +121,12 @@ function originMatchesPattern(origin, pattern) {
 }
 
 const configuredCorsOrigins = parseOriginPatterns(CORS_ORIGIN);
-const corsOriginPatterns = configuredCorsOrigins.length ? configuredCorsOrigins : DEFAULT_CORS_ORIGIN_PATTERNS;
+const corsOriginPatterns = Array.from(
+  new Set([
+    ...(configuredCorsOrigins.length ? configuredCorsOrigins : DEFAULT_CORS_ORIGIN_PATTERNS),
+    ...MOBILE_CORS_ORIGIN_PATTERNS
+  ])
+);
 
 if (IS_PRODUCTION && !configuredCorsOrigins.length) {
   console.warn("CORS_ORIGIN is not set. Cross-origin browser requests are disabled until you configure an allowed frontend origin.");

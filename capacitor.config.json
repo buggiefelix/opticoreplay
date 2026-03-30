@@ -1,0 +1,6 @@
+{
+  "appId": "com.opticoreplay.app",
+  "appName": "Opticore Play",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
