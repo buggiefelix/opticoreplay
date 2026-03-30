@@ -295,6 +295,8 @@ async function initPage() {
   const page = document.body.dataset.page || "";
   if (page !== "game") {
     stopWhotBackgroundMusic(true);
+    document.body.classList.remove("game-focus-ludo");
+    document.body.classList.remove("game-focus-whot");
   }
   let user = getStoredUser();
 
@@ -3951,6 +3953,7 @@ async function initGamePage(user) {
 
   applyGameTheme(match.game);
   document.body.dataset.matchGame = match.game;
+  document.body.classList.toggle("game-focus-ludo", match.game === "ludo");
   document.body.classList.toggle("game-focus-whot", match.game === "whot");
   if (isPrivateLudoMatch(match)) {
     try {
@@ -4046,6 +4049,7 @@ function renderActiveGame() {
   clearWhotDragState();
   setBalanceEverywhere(activeRuntime.user);
   document.body.dataset.matchGame = activeRuntime.match.game;
+  document.body.classList.toggle("game-focus-ludo", activeRuntime.match.game === "ludo");
   document.body.classList.toggle("game-focus-whot", activeRuntime.match.game === "whot");
   const engine = GAME_ENGINES[activeRuntime.match.game];
   const view = engine.render(activeRuntime);
