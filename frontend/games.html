@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Games | Opticore Play</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="script.js" defer></script>
+</head>
+<body data-page="games" data-protected="true" data-nav="home">
+  <div class="page-shell">
+    <header class="app-topbar">
+      <a class="brand-lockup" href="dashboard.html">
+        <img class="brand-logo" src="a_professional_logo_design_for_opticore_play_is.png" alt="Opticore Play logo">
+        <div class="brand-copy">
+          <strong>Opticore Play</strong>
+          <span>Game directory</span>
+        </div>
+      </a>
+      <div class="topbar-actions">
+        <span class="info-pill">Balance <strong data-balance>0 OPT</strong></span>
+        <a class="btn btn-ghost" href="dashboard.html">Back</a>
+      </div>
+    </header>
+
+    <section class="panel" style="margin-top: 22px;">
+      <span class="eyebrow">Arena directory</span>
+      <h1 class="panel-title">Open the exact game you want without stretching the dashboard.</h1>
+      <p class="panel-copy">The home screen now keeps only the most important actions. This page holds the full game list whenever you want every arena in one place.</p>
+      <div id="gamesDirectoryHighlights" class="three-up" style="margin-top: 18px;"></div>
+    </section>
+
+    <section class="panel" style="margin-top: 22px;">
+      <div class="panel-head">
+        <span class="eyebrow">All games</span>
+        <h2 class="panel-title">Choose your next arena</h2>
+        <p class="panel-copy">Every card below opens a dedicated match setup screen with ranked and practice modes.</p>
+      </div>
+      <div id="gamesDirectoryGrid" class="game-grid" style="margin-top: 18px;"></div>
+    </section>
+  </div>
+
+  <nav class="nav-bar">
+    <a class="nav-link" data-nav-link="home" href="dashboard.html"><span class="nav-dot"></span><span>Home</span></a>
+    <a class="nav-link" data-nav-link="wallet" href="wallet.html"><span class="nav-dot"></span><span>Wallet</span></a>
+    <a class="nav-link" data-nav-link="friends" href="friends.html"><span class="nav-dot"></span><span>Friends</span></a>
+    <a class="nav-link" data-nav-link="tournaments" href="tournaments.html"><span class="nav-dot"></span><span>Tourneys</span></a>
+    <a class="nav-link" data-nav-link="leaderboard" href="leaderboard.html"><span class="nav-dot"></span><span>Leaders</span></a>
+    <a class="nav-link" data-nav-link="profile" href="profile.html"><span class="nav-dot"></span><span>Profile</span></a>
+  </nav>
+</body>
+</html>

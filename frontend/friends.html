@@ -49,7 +49,20 @@
       </section>
     </section>
 
-    <section class="social-feed-layout" style="margin-top: 22px;">
+    <section class="panel" style="margin-top: 22px;">
+      <div class="panel-head">
+        <span class="eyebrow">Focus view</span>
+        <h2 class="panel-title">Keep the social page lighter.</h2>
+        <p class="panel-copy">Switch between the timeline, requests, and chat instead of loading the full social stack all at once.</p>
+      </div>
+      <div class="page-focus-switch" aria-label="Friends sections" style="margin-top: 18px;">
+        <button class="page-focus-tab is-current" type="button" data-focus-group="friends-view" data-focus-target="feed" aria-pressed="true">Feed</button>
+        <button class="page-focus-tab" type="button" data-focus-group="friends-view" data-focus-target="requests" aria-pressed="false">Requests</button>
+        <button class="page-focus-tab" type="button" data-focus-group="friends-view" data-focus-target="chat" aria-pressed="false">Chat</button>
+      </div>
+    </section>
+
+    <section class="social-feed-layout page-focus-panel" data-focus-group="friends-view" data-focus-panel="feed" style="margin-top: 22px;">
       <section class="panel">
         <div class="panel-head">
           <span class="eyebrow">Friend feed</span>
@@ -78,47 +91,45 @@
       </section>
     </section>
 
-    <section class="social-layout" style="margin-top: 22px;">
-      <section class="section-stack">
-        <section class="panel">
-          <div class="panel-head">
-            <span class="eyebrow">Requests</span>
-            <h2 class="panel-title">Incoming and outgoing</h2>
-          </div>
-          <div id="friendIncoming" class="social-card-list" style="margin-top: 18px;"></div>
-          <div id="friendOutgoing" class="social-card-list" style="margin-top: 18px;"></div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-head">
-            <span class="eyebrow">Players</span>
-            <h2 class="panel-title">People to connect with</h2>
-          </div>
-          <div id="discoverPlayers" class="social-card-list" style="margin-top: 18px;"></div>
-        </section>
-      </section>
-
-      <section class="panel social-chat-panel">
+    <section class="content-grid page-focus-panel" data-focus-group="friends-view" data-focus-panel="requests" hidden style="margin-top: 22px;">
+      <section class="panel">
         <div class="panel-head">
-          <span class="eyebrow">Friends chat</span>
-          <h2 class="panel-title">Talk with confirmed friends.</h2>
-          <p class="panel-copy">The same conversation stays available here and inside your live match page.</p>
+          <span class="eyebrow">Requests</span>
+          <h2 class="panel-title">Incoming and outgoing</h2>
         </div>
-        <div class="friends-chat-layout" style="margin-top: 18px;">
-          <div id="friendsList" class="friend-list"></div>
-          <div class="chat-thread-card">
-            <div id="chatFriendMeta"></div>
-            <div id="chatMessages" class="chat-thread" style="margin-top: 18px;"></div>
-            <form id="friendMessageForm" class="chat-compose" style="margin-top: 18px;">
-              <div class="field">
-                <label for="friendMessageInput">Message</label>
-                <textarea id="friendMessageInput" rows="3" placeholder="Choose a friend first."></textarea>
-              </div>
-              <button class="btn btn-primary" type="submit">Send Message</button>
-            </form>
-          </div>
-        </div>
+        <div id="friendIncoming" class="social-card-list" style="margin-top: 18px;"></div>
+        <div id="friendOutgoing" class="social-card-list" style="margin-top: 18px;"></div>
       </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <span class="eyebrow">Players</span>
+          <h2 class="panel-title">People to connect with</h2>
+        </div>
+        <div id="discoverPlayers" class="social-card-list" style="margin-top: 18px;"></div>
+      </section>
+    </section>
+
+    <section class="panel social-chat-panel page-focus-panel" data-focus-group="friends-view" data-focus-panel="chat" hidden style="margin-top: 22px;">
+      <div class="panel-head">
+        <span class="eyebrow">Friends chat</span>
+        <h2 class="panel-title">Talk with confirmed friends.</h2>
+        <p class="panel-copy">The same conversation stays available here and inside your live match page.</p>
+      </div>
+      <div class="friends-chat-layout" style="margin-top: 18px;">
+        <div id="friendsList" class="friend-list"></div>
+        <div class="chat-thread-card">
+          <div id="chatFriendMeta"></div>
+          <div id="chatMessages" class="chat-thread" style="margin-top: 18px;"></div>
+          <form id="friendMessageForm" class="chat-compose" style="margin-top: 18px;">
+            <div class="field">
+              <label for="friendMessageInput">Message</label>
+              <textarea id="friendMessageInput" rows="3" placeholder="Choose a friend first."></textarea>
+            </div>
+            <button class="btn btn-primary" type="submit">Send Message</button>
+          </form>
+        </div>
+      </div>
     </section>
   </div>
 

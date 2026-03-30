@@ -290,6 +290,7 @@ async function initPage() {
   clearSocialRuntime();
   highlightActiveNav();
   initPasswordToggles();
+  initFocusSwitches();
 
   const page = document.body.dataset.page || "";
   if (page !== "game") {
@@ -311,6 +312,7 @@ async function initPage() {
     login: initLogin,
     register: initRegister,
     dashboard: initDashboard,
+    games: initGamesPage,
     match: initMatchSetup,
     game: initGamePage,
     wallet: initWallet,
@@ -351,6 +353,79 @@ function initPasswordToggles() {
       const end = input.value.length;
       input.setSelectionRange(end, end);
     });
+  });
+}
+
+function initFocusSwitches() {
+  const buttons = Array.from(document.querySelectorAll("[data-focus-group][data-focus-target]"));
+  if (!buttons.length) {
+    return;
+  }
+
+  const groups = new Map();
+  const getGroupState = (groupName) => {
+    if (!groups.has(groupName)) {
+      groups.set(groupName, {
+        buttons: [],
+        panels: []
+      });
+    }
+    return groups.get(groupName);
+  };
+
+  buttons.forEach((button) => {
+    const groupName = button.getAttribute("data-focus-group");
+    if (!groupName) {
+      return;
+    }
+    getGroupState(groupName).buttons.push(button);
+  });
+
+  document.querySelectorAll("[data-focus-group][data-focus-panel]").forEach((panel) => {
+    const groupName = panel.getAttribute("data-focus-group");
+    if (!groupName) {
+      return;
+    }
+    getGroupState(groupName).panels.push(panel);
+  });
+
+  groups.forEach(({ buttons: groupButtons, panels }) => {
+    if (!groupButtons.length || !panels.length) {
+      return;
+    }
+
+    const panelLookup = new Map(
+      panels.map((panel) => [panel.getAttribute("data-focus-panel"), panel])
+    );
+    let activeTarget = groupButtons.find((button) => button.classList.contains("is-current"))?.getAttribute("data-focus-target")
+      || groupButtons[0].getAttribute("data-focus-target")
+      || panels[0].getAttribute("data-focus-panel");
+
+    const syncGroup = () => {
+      groupButtons.forEach((button) => {
+        const current = button.getAttribute("data-focus-target") === activeTarget;
+        button.classList.toggle("is-current", current);
+        button.setAttribute("aria-pressed", current ? "true" : "false");
+      });
+
+      panels.forEach((panel) => {
+        panel.hidden = panel.getAttribute("data-focus-panel") !== activeTarget;
+      });
+    };
+
+    groupButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = button.getAttribute("data-focus-target");
+        if (!target || !panelLookup.has(target)) {
+          return;
+        }
+
+        activeTarget = target;
+        syncGroup();
+      });
+    });
+
+    syncGroup();
   });
 }
 
@@ -1398,8 +1473,8 @@ function renderDashboardHeadline(user) {
 
   const rawUsername = user && user.username ? user.username : "Player";
   const username = escapeHtml(rawUsername.length > 14 ? `${rawUsername.slice(0, 13)}...` : rawUsername);
-  node.innerHTML = `<span class="dashboard-headline-user">${username}</span>, <span class="dashboard-headline-accent">Ready</span><br>for the next<br>win?`;
-  node.setAttribute("aria-label", `${rawUsername}, Ready for the next win?`);
+  node.innerHTML = `Hi, <span class="dashboard-headline-user">${username}</span>`;
+  node.setAttribute("aria-label", `Hi, ${rawUsername}`);
 }
 
 function renderInfoList(targetId, items, emptyMessage) {
@@ -1622,13 +1697,16 @@ async function initRegister(user) {
   });
 }
 
-function renderDashboardGames(targetId) {
+function renderDashboardGames(targetId, options = {}) {
   const target = document.getElementById(targetId);
   if (!target) {
     return;
   }
 
+  const limit = Number.isFinite(Number(options.limit)) ? Math.max(0, Math.trunc(Number(options.limit))) : Number.POSITIVE_INFINITY;
+
   target.innerHTML = Object.values(GAME_LIBRARY)
+    .slice(0, limit)
     .map((game) => {
       return `
         <a class="game-link-card" data-game-key="${escapeHtml(game.key)}" style="${gameThemeStyle(game.key)}" href="match.html?game=${encodeURIComponent(game.key)}">
@@ -1892,43 +1970,69 @@ function renderDashboardQuickStrip(user, tournaments) {
     return;
   }
 
-  const favoriteKey = user.favoriteGame || "ludo";
-  const favoriteGame = gameData(favoriteKey);
   const featuredTournament = (tournaments || [])[0];
-  const tournamentCopy = featuredTournament
-    ? `${tokenAmount(featuredTournament.entryFee)} entry`
-    : "Brackets open";
+  const tournamentCopy = featuredTournament ? featuredTournament.name : "Tournament hub";
 
   target.innerHTML = `
-    <a class="quick-entry-card" href="wallet.html">
+    <a class="quick-entry-card dashboard-shortcut-card" href="wallet.html">
       ${appIconFrame("wallet", "quick-entry-icon")}
       <div class="quick-entry-copy">
-        <strong>${tokenAmount(getTokenBalance(user))}</strong>
-        <span>${TOKEN_SYMBOL} wallet ready for your next move.</span>
+        <strong>Wallet</strong>
+        <span>${tokenAmount(getTokenBalance(user))}</span>
       </div>
     </a>
-    <a class="quick-entry-card theme-surface" style="${gameThemeStyle(favoriteKey)}" href="match.html?game=${encodeURIComponent(favoriteKey)}">
-      ${gameIconBubble(favoriteKey, "quick-entry-icon is-game")}
-      <div class="quick-entry-copy">
-        <strong>${escapeHtml(favoriteGame.name)}</strong>
-        <span>${escapeHtml(favoriteGame.tagline)}</span>
-      </div>
-    </a>
-    <a class="quick-entry-card" href="tournaments.html">
+    <a class="quick-entry-card dashboard-shortcut-card" href="tournaments.html">
       ${appIconFrame("trophy", "quick-entry-icon")}
       <div class="quick-entry-copy">
-        <strong>${featuredTournament ? escapeHtml(featuredTournament.name) : "Tournament hub"}</strong>
+        <strong>Brackets</strong>
         <span>${escapeHtml(tournamentCopy)}</span>
       </div>
     </a>
-    <a class="quick-entry-card" href="leaderboard.html">
-      ${appIconFrame("chart", "quick-entry-icon")}
+    <a class="quick-entry-card dashboard-shortcut-card" href="friends.html">
+      ${appIconFrame("friends", "quick-entry-icon")}
       <div class="quick-entry-copy">
-        <strong>Leaderboard</strong>
-        <span>Check the biggest ${TOKEN_SYMBOL} stacks and most active players.</span>
+        <strong>Friends</strong>
+        <span>Open chat</span>
+      </div>
+    </a>
+    <a class="quick-entry-card dashboard-shortcut-card" href="profile.html">
+      ${appIconFrame("profile", "quick-entry-icon")}
+      <div class="quick-entry-copy">
+        <strong>Profile</strong>
+        <span>${escapeHtml(gameData(user.favoriteGame || "ludo").name)}</span>
       </div>
     </a>
   `;
+}
+
+function renderDashboardLobbyGames(targetId, options = {}) {
+  const target = document.getElementById(targetId);
+  if (!target) {
+    return;
+  }
+
+  const limit = Number.isFinite(Number(options.limit)) ? Math.max(0, Math.trunc(Number(options.limit))) : 4;
+  const priority = ["ludo", "chess", "whot", "ayo", "connectfour", "memory"];
+
+  target.innerHTML = priority
+    .slice(0, limit)
+    .map((key) => {
+      const game = gameData(key);
+      return `
+        <a class="dashboard-arena-card" style="${gameThemeStyle(game.key)}" href="match.html?game=${encodeURIComponent(game.key)}">
+          <div class="dashboard-arena-head">
+            ${gameIconBubble(game.key, "dashboard-arena-icon is-game")}
+            <span class="dashboard-arena-badge">Live</span>
+          </div>
+          <div class="dashboard-arena-copy">
+            <strong>${escapeHtml(game.name)}</strong>
+            <span>${escapeHtml(game.tagline)}</span>
+          </div>
+          <span class="dashboard-arena-link">Play now</span>
+        </a>
+      `;
+    })
+    .join("");
 }
 
 function leaderboardCardMarkup(player, index) {
@@ -2194,19 +2298,28 @@ function renderFeaturedTournament(tournaments, user) {
 async function initDashboard(user) {
   const data = await apiRequest(`/bootstrap/${encodeURIComponent(user.username)}`);
   setStoredUser(data.user);
+  setBalanceEverywhere(data.user);
   renderDashboardHeadline(data.user);
-
-  renderDashboardHeroStats(data.user, data.activeSessions);
-  renderDashboardQuickStrip(data.user, data.tournaments);
-  renderDashboardGames("dashboardGames");
-  renderDashboardSummary(data.user, data.transactions, data.history, data.tournaments);
-  renderDashboardLeaderboard(data.leaderboard);
-  renderDashboardActivity(data.transactions, data.history);
-  renderFeaturedTournament(data.tournaments, data.user);
+  renderDashboardLobbyGames("dashboardGames", { limit: 4 });
 
   if (typeof window.initDashboardPage === "function") {
     window.initDashboardPage(data);
   }
+}
+
+async function initGamesPage(user) {
+  setStoredUser(user);
+  setBalanceEverywhere(user);
+  renderDashboardGames("gamesDirectoryGrid");
+  renderInfoList(
+    "gamesDirectoryHighlights",
+    [
+      { label: "Live arenas", value: String(Object.keys(GAME_LIBRARY).length), copy: "Every table below opens its own dedicated setup screen." },
+      { label: "Favorite game", value: gameData(user.favoriteGame || "ludo").name, copy: "Jump back into the arena you use most." },
+      { label: "Wallet ready", value: tokenAmount(getTokenBalance(user)), copy: "Use this focused page when you want every game without the dashboard scroll." }
+    ],
+    "No game highlights yet."
+  );
 }
 
 async function initMatchSetup(user) {

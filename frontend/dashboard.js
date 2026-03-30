@@ -1,26 +1,14 @@
 (function dashboardPageEnhancements() {
   const DASHBOARD_PAGE = "dashboard";
-  const MOBILE_DETAIL_MEDIA = "(max-width: 720px)";
   const HYDRATED_TARGETS = [
-    "dashboardQuickStrip",
-    "dashboardStats",
-    "dashboardTournament",
-    "dashboardGames",
-    "dashboardActivity",
-    "dashboardSummary",
-    "dashboardLeaderboard"
+    "dashboardGames"
   ];
   const CLICKABLE_SELECTOR = [
     "button",
     "a.btn",
     ".dashboard-wallet-btn",
-    ".dashboard-lobby-chip",
     ".nav-link",
-    ".quick-entry-card",
-    ".game-link-card",
-    ".balance-hero-card",
-    ".tournament-showcase",
-    ".leader-card"
+    ".dashboard-arena-card"
   ].join(", ");
   let clickSound = null;
 
@@ -52,34 +40,6 @@
     `;
   }
 
-  function statPanelSkeleton() {
-    return `
-      <div class="dashboard-skeleton-panel">
-        <span class="dashboard-skeleton-pill"></span>
-        <span class="dashboard-skeleton-value"></span>
-        ${skeletonLine()}
-        ${skeletonLine(true)}
-        <div class="dashboard-skeleton-tag-row">
-          <span class="dashboard-skeleton-tag"></span>
-          <span class="dashboard-skeleton-tag"></span>
-        </div>
-      </div>
-    `;
-  }
-
-  function sheetRowSkeleton() {
-    return `
-      <div class="dashboard-skeleton-row">
-        <span class="dashboard-skeleton-icon"></span>
-        <div class="dashboard-skeleton-copy-stack">
-          ${skeletonLine(true)}
-          ${skeletonLine()}
-        </div>
-        <span class="dashboard-skeleton-value"></span>
-      </div>
-    `;
-  }
-
   function gameCardSkeleton() {
     return `
       <div class="dashboard-skeleton-game">
@@ -107,23 +67,7 @@
     }
 
     document.body.dataset.dashboardLoading = "true";
-    setSkeletonMarkup("dashboardQuickStrip", Array.from({ length: 4 }, quickCardSkeleton).join(""));
-    setSkeletonMarkup("dashboardStats", Array.from({ length: 3 }, statPanelSkeleton).join(""));
-    setSkeletonMarkup("dashboardTournament", `<div class="dashboard-skeleton-sheet">${Array.from({ length: 4 }, sheetRowSkeleton).join("")}</div>`);
-    setSkeletonMarkup("dashboardGames", `<div class="dashboard-skeleton-game-grid">${Array.from({ length: 5 }, gameCardSkeleton).join("")}</div>`);
-    setSkeletonMarkup("dashboardActivity", `<div class="dashboard-skeleton-sheet">${Array.from({ length: 4 }, sheetRowSkeleton).join("")}</div>`);
-    setSkeletonMarkup("dashboardSummary", `
-      <div class="dashboard-skeleton-sheet summary">
-        ${Array.from({ length: 4 }, () => `
-          <div class="dashboard-skeleton-row">
-            ${skeletonLine(true)}
-            <span class="dashboard-skeleton-value"></span>
-          </div>
-        `).join("")}
-        <span class="dashboard-skeleton-note dashboard-skeleton-line"></span>
-      </div>
-    `);
-    setSkeletonMarkup("dashboardLeaderboard", `<div class="dashboard-skeleton-sheet">${Array.from({ length: 3 }, sheetRowSkeleton).join("")}</div>`);
+    setSkeletonMarkup("dashboardGames", Array.from({ length: 4 }, gameCardSkeleton).join(""));
   }
 
   function getClickSound() {
@@ -157,74 +101,6 @@
     }
   }
 
-  function initDashboardDetailSwitch() {
-    if (!isDashboardPage()) {
-      return;
-    }
-
-    const tabs = Array.from(document.querySelectorAll("[data-dashboard-detail-target]"));
-    const panels = Array.from(document.querySelectorAll("[data-dashboard-detail-panel]"));
-    const sideStack = document.querySelector(".dashboard-side-stack");
-    const mediaQuery = typeof window.matchMedia === "function"
-      ? window.matchMedia(MOBILE_DETAIL_MEDIA)
-      : null;
-
-    if (!tabs.length || !panels.length || !mediaQuery) {
-      return;
-    }
-
-    const panelLookup = new Map(
-      panels.map((panel) => [panel.getAttribute("data-dashboard-detail-panel"), panel])
-    );
-    let activeTarget = tabs.find((tab) => tab.classList.contains("is-current"))?.getAttribute("data-dashboard-detail-target")
-      || tabs[0].getAttribute("data-dashboard-detail-target")
-      || "activity";
-
-    const syncDetailView = () => {
-      const mobileLayout = mediaQuery.matches;
-
-      tabs.forEach((tab) => {
-        const target = tab.getAttribute("data-dashboard-detail-target");
-        const current = target === activeTarget;
-        tab.classList.toggle("is-current", current);
-        tab.setAttribute("aria-pressed", current ? "true" : "false");
-      });
-
-      panels.forEach((panel) => {
-        const panelName = panel.getAttribute("data-dashboard-detail-panel");
-        panel.hidden = mobileLayout && panelName !== activeTarget;
-      });
-
-      if (sideStack) {
-        sideStack.hidden = mobileLayout && activeTarget === "activity";
-      }
-    };
-
-    tabs.forEach((tab) => {
-      tab.addEventListener("click", () => {
-        const target = tab.getAttribute("data-dashboard-detail-target");
-        if (!target || !panelLookup.has(target)) {
-          return;
-        }
-
-        activeTarget = target;
-        syncDetailView();
-      });
-    });
-
-    const handleViewportChange = () => {
-      syncDetailView();
-    };
-
-    if (typeof mediaQuery.addEventListener === "function") {
-      mediaQuery.addEventListener("change", handleViewportChange);
-    } else if (typeof mediaQuery.addListener === "function") {
-      mediaQuery.addListener(handleViewportChange);
-    }
-
-    syncDetailView();
-  }
-
   window.initDashboardPage = function initDashboardPage() {
     if (!isDashboardPage()) {
       return;
@@ -248,7 +124,6 @@
       return;
     }
     applyDashboardLoadingState();
-    initDashboardDetailSwitch();
     document.addEventListener("click", playClickFeedback, true);
   });
 })();
